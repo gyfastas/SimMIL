@@ -429,16 +429,23 @@ class Agg_GAttention(nn.Module):
         self.attention_weights = nn.Linear(self.D, self.K)
 
         self.classifier = nn.Linear(self.L*self.K, 4)
-    def forward(self, H):
+    def forward(self, H, batch=None):
         A_V = self.attention_V(H)  # NxD
         A_U = self.attention_U(H)  # NxD
         A = self.attention_weights(A_V * A_U) # element wise multiplication # NxK
         A = torch.transpose(A, 1, 0)  # KxN
-        A = F.softmax(A, dim=1)  # softmax over N
-
-        M = torch.mm(A, H)  # KxL
-
-        Y_prob = self.classifier(M)
+        ## batch: map each instance to corresponding bag in a mini-batch [N] (0,0,0...1,....,2....)
+        if batch is None:
+            A = F.softmax(A, dim=1)  # softmax over N
+            M = torch.mm(A, H)
+            Y_prob = self.classifier(M)
+        elif batch.shape[0]==A.shape[0]:
+            bag_num = torch.max(batch)[0].item()
+            ##TODO: support batch as bag size: [N1, N2...NK]
+            ##TODO: implementing with pytorch-scatter
+            A = [F.softmax(A[torch.nonzero(batch==i)], dim=1) for i in range(0, bag_num)]
+            M = [torch.mm(A[torch.nonzero(batch==i)], H[torch.nonzero(batch==i)]) for i in range(0, bag_num)]
+            Y_prob = torch.stack([self.classifier(M[i]) for i in range(0, bag_num)]) # [bg_num, 4]
         # Y_hat = torch.argmax(Y_prob).float()
         # Y_hat = torch.ge(Y_prob, 0.5).float()
         return Y_prob, A
@@ -462,18 +469,25 @@ class Agg_GAttention(nn.Module):
 
         return Y_hat.cpu(), Y.cpu()
 
-    def calculate_objective(self, X, Y):
+    def calculate_objective(self, X, Y, batch=None):
 
-        Y_prob, A = self.forward(X)
+        Y_prob, A = self.forward(X, batch=batch)
         # Y_hat = torch.ge(Y_prob, 0.5).float()
 
         # Y_prob = torch.clamp(Y_prob, min=1e-5, max=1. - 1e-5)
         # neg_log_likelihood = -1. * (Y * torch.log(Y_prob) + (1. - Y) * torch.log(1. - Y_prob))  # negative log bernoulli
-        Y_hat = torch.argmax(Y_prob).float()
-        neg_log_likelihood = self.criterion(Y_prob, Y)
-        Y = Y.float()
-        error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
-        return neg_log_likelihood, error, A, torch.argmax(Y_prob).item(), Y.item()
+        if (Y_prob.dim() > 1): ## Batch supported
+            Y_hat   = torch.argmax(Y_prob, 1).float() ## [N, ]
+            neg_log_likelihood = self.criterion(Y_prob, Y)
+            Y = Y.float()
+            error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
+            return neg_log_likelihood, error, A, torch.argmax(Y_prob, 1), Y
+        else:
+            Y_hat = torch.argmax(Y_prob).float()
+            neg_log_likelihood = self.criterion(Y_prob, Y)
+            Y = Y.float()
+            error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
+            return neg_log_likelihood, error, A, torch.argmax(Y_prob).item(), Y.item()
 
 class Agg_SAttention(nn.Module):
     def __init__(self, dropout=0.1):

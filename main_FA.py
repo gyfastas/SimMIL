@@ -131,14 +131,27 @@ aug_test = [transforms.Resize((256, 256)),
 
 train_dataset = HISMIL(bag_path, 256, aug_train, floder=args.folder, ratio=args.ratio, train=True)
 test_dataset = HISMIL(bag_path, 256, aug_test, floder=args.folder, ratio=args.ratio, train=False)
+##TODO: Batch enabled loader
+batch_size = 2
 train_loader = data_utils.DataLoader(train_dataset,
-                                     batch_size=1,
+                                     batch_size=batch_size,
+                                     collate_fn= train_dataset.collate_fn,
                                      shuffle=True,
                                      **loader_kwargs)
 test_loader = data_utils.DataLoader(test_dataset,
-                                    batch_size=1,
+                                    batch_size=batch_size,
+                                    collate_fn= test_dataset.collate_fn,
                                     shuffle=False,
                                     **loader_kwargs)
+###Original single bag loader
+# train_loader = data_utils.DataLoader(train_dataset,
+#                                      batch_size=1,
+#                                      shuffle=True,
+#                                      **loader_kwargs)
+# test_loader = data_utils.DataLoader(test_dataset,
+#                                     batch_size=1,
+#                                     shuffle=False,
+#                                     **loader_kwargs)
 print('Init Model')
 
 
@@ -220,6 +233,92 @@ parameters = [{'params': model1.parameters()}, {'params': model2.parameters()}]
 optimizer = optim.Adam(parameters, lr=args.lr, betas=(0.9, 0.999), weight_decay=args.reg)
 
 
+def train_multi_batch(epoch):
+    model1.train()
+    if not args.insnorm:
+        model1.apply(fix_bn)
+    model2.train()
+    train_loss = 0.
+    CE_loss = 0.
+    INS_loss = 0.
+    train_error = 0.
+    preds_list = []
+    gt_list = []
+    for batch_idx, (idx, data, label, batch) in enumerate(tqdm(train_loader)):
+        bag_label = label
+        idx = idx.squeeze(0)
+        # print(idx)
+        if args.cuda:
+            data, bag_label, idx = data.cuda(), bag_label.cuda(), idx.cuda()
+        data, bag_label = Variable(data), Variable(bag_label)
+
+        # reset gradients
+        optimizer.zero_grad()
+        # calculate loss and metrics
+
+        feature, self_feat = model1(data)  # feature:
+        ce_loss, error, _, preds, gt = model2.calculate_objective(
+            feature, bag_label, batch=batch) ##preds: [N] , gt： [N]
+
+        # print(ce_loss, iwns_loss)
+        # loss
+        if args.weight != 0:
+            ins_loss, new_data_memory = Ins_Module(
+                idx, self_feat, torch.arange(len(config.gpu_device)))
+            loss = ce_loss + args.weight * ins_loss
+        else:
+            loss = ce_loss
+
+        # print info
+        CE_loss += ce_loss.item()
+        # INS_loss += ins_loss.item()
+        train_loss += loss.item()
+        train_error += error
+        preds_list.extend([preds[i].item() for i in range(preds.shape[0])])
+        gt_list.append([gt[i].item() for i in range(gt.shape[0])])
+
+        # backward pass
+        loss.backward()
+        # step
+        optimizer.step()
+        #update memo and cluster
+        if args.weight != 0:
+            with torch.no_grad():
+                memory_bank.update(idx, new_data_memory)
+                Ins_Module.memory_bank_broadcast = memory_bank.bank_broadcast  # update loss_fn
+                if (config.loss_params.loss == 'LocalAggregationLossModule' and
+                        (Ins_Module.first_iteration_kmeans or batch_idx == (config.loss_params.kmeans_freq-1))):
+                    if Ins_Module.first_iteration_kmeans:
+                        Ins_Module.first_iteration_kmeans = False
+                        # get kmeans clustering (update our saved clustering)
+                    k = [config.loss_params.kmeans_k for _ in
+                         range(config.loss_params.n_kmeans)]
+
+                    # NOTE: we use a different gpu for FAISS otherwise cannot fit onto memory
+                    km = Kmeans(k, memory_bank, gpu_device=config.gpu_device)
+                    cluster_labels = km.compute_clusters()
+
+                    # broadcast the cluster_labels after modification
+                    for i in range(len(config.gpu_device)):
+                        device = Ins_Module.cluster_label_broadcast[i].device
+                        Ins_Module.cluster_label_broadcast[i] = cluster_labels.to(
+                            device)
+
+    # calculate loss and error for epoch
+    CE_loss /= len(train_loader)
+    INS_loss /= len(train_loader)
+    train_loss /= len(train_loader)
+    train_error /= len(train_loader)
+    logger.log_string('====================Train')
+    # logger.log_string('Epoch: {}, ceLoss: {:.4f}, Train error: {:.4f}'
+    #                   .format(epoch, ce_loss.item(), train_error))
+    logger.log_string('Epoch: {}, ceLoss: {:.4f}, insLoss: {:.4f}, Train loss: {:.4f}'
+                      .format(epoch, CE_loss, INS_loss, train_loss))
+    cal_metrics_train(preds_list, gt_list, args, logger, epoch)
+    # if epoch == args.epochs-1:
+    #     torch.save({'state_dict': model1.state_dict()}, 'checkpoint_{:04d}.pth.tar'.format(epoch))
+
+
 def train(epoch):
     model1.train()
     if not args.insnorm:
@@ -232,6 +331,7 @@ def train(epoch):
     preds_list = []
     gt_list = []
     for batch_idx, (idx, data, label) in enumerate(tqdm(train_loader)):
+        ##TODO: batch information
         bag_label = label
         idx = idx.squeeze(0)
         # print(idx)
@@ -243,7 +343,7 @@ def train(epoch):
         optimizer.zero_grad()
         # calculate loss and metrics
 
-        feature, self_feat = model1(data)
+        feature, self_feat = model1(data) ## feature: 
         ce_loss, error, _, preds, gt = model2.calculate_objective(feature, bag_label)
 
 

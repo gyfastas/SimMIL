@@ -60,6 +60,19 @@ class HISMIL(ImageFolder):
             chosen_list += [tmp_class_sample[k] for k in chosen_idx]
         return chosen_list
 
+    def collate_fn(self, batch):
+        idx_lists = [x[0] for x in batch]
+        bag_lists = [x[1] for x in batch]
+        targets  = [x[2] for x in batch]
+        batch = []
+        for i in range(len(batch)):
+            batch.extend([i]* len(idx_lists[i]))
+        
+        batch = torch.tensor(batch).long()
+        return torch.cat(idx_lists), torch.cat(bag_lists), torch.cat(targets), batch
+
+
+
     def __getitem__(self, index):
         path, target = self.folder[index]
         # if target >1:
