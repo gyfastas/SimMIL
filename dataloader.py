@@ -64,12 +64,12 @@ class HISMIL(ImageFolder):
         idx_lists = [x[0] for x in batch]
         bag_lists = [x[1] for x in batch]
         targets  = [x[2] for x in batch]
-        batch = []
+        batches = []
         for i in range(len(batch)):
-            batch.extend([i]* len(idx_lists[i]))
+            batches.extend([i]* len(idx_lists[i]))
         
-        batch = torch.tensor(batch).long()
-        return torch.cat(idx_lists), torch.cat(bag_lists), torch.cat(targets), batch
+        batches = torch.tensor(batches).long()
+        return torch.cat(idx_lists), torch.cat(bag_lists), torch.cat(targets), batches
 
 
 
@@ -98,7 +98,8 @@ class HISMIL(ImageFolder):
                     target = self.target_transform(target)
                 bag_list = torch.cat((bag_list, sample.unsqueeze(0)))
                 idx_list = torch.cat((idx_list, torch.tensor([idx])))
-        return idx_list, bag_list, target
+        # batch_idx = torch.ones_like(idx_list)*index
+        return idx_list, bag_list, torch.tensor([target]).long()
     def __len__(self):
         return len(self.folder)
 

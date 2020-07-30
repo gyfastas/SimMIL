@@ -440,12 +440,13 @@ class Agg_GAttention(nn.Module):
             M = torch.mm(A, H)
             Y_prob = self.classifier(M)
         elif batch.shape[0]==H.shape[0]:
-            bag_num = torch.max(batch)[0].item()
+            bag_num = torch.max(batch) + 1
             ##TODO: support batch as bag size: [N1, N2...NK]
             ##TODO: implementing with pytorch-scatter
-            A = [F.softmax(A[torch.nonzero(batch==i)], dim=1) for i in range(0, bag_num)]
-            M = [torch.mm(A[torch.nonzero(batch==i)], H[torch.nonzero(batch==i)]) for i in range(0, bag_num)]
-            Y_prob = torch.stack([self.classifier(M[i]) for i in range(0, bag_num)]) # [bg_num, 4]
+
+            M = [torch.mm(F.softmax(A.squeeze(0)[batch==i].unsqueeze(0), dim=1), H[batch==i]) for i in range(0, bag_num)]
+            A = [F.softmax(A.squeeze(0)[batch == i]) for i in range(0, bag_num)]
+            Y_prob = torch.cat([self.classifier(M[i]) for i in range(0, bag_num)]) # [bg_num, 4]
         # Y_hat = torch.argmax(Y_prob).float()
         # Y_hat = torch.ge(Y_prob, 0.5).float()
         return Y_prob, A
@@ -478,6 +479,7 @@ class Agg_GAttention(nn.Module):
         # neg_log_likelihood = -1. * (Y * torch.log(Y_prob) + (1. - Y) * torch.log(1. - Y_prob))  # negative log bernoulli
         if (Y_prob.dim() > 1): ## Batch supported
             Y_hat   = torch.argmax(Y_prob, 1).float() ## [N, ]
+            # print(Y)
             neg_log_likelihood = self.criterion(Y_prob, Y)
             Y = Y.float()
             error = 1. - Y_hat.eq(Y).cpu().float().mean().item()

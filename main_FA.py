@@ -70,7 +70,7 @@ parser.add_argument('-a', '--arch', metavar='ARCH', default='resnet18',
                     help='model architecture: ' +
                         ' | '.join(model_names) +
                         ' (default: resnet50)')
-parser.add_argument('--weight', type=float, default=1)
+parser.add_argument('--weight', type=float, default=0)
 parser.add_argument('--data_dir', type=str, default='..',
                     help='local: ../'
                          'remote: /remote-home/my/datasets/BASH')
@@ -132,7 +132,7 @@ aug_test = [transforms.Resize((256, 256)),
 train_dataset = HISMIL(bag_path, 256, aug_train, floder=args.folder, ratio=args.ratio, train=True)
 test_dataset = HISMIL(bag_path, 256, aug_test, floder=args.folder, ratio=args.ratio, train=False)
 ##TODO: Batch enabled loader
-batch_size = 2
+batch_size = 8
 train_loader = data_utils.DataLoader(train_dataset,
                                      batch_size=batch_size,
                                      collate_fn= train_dataset.collate_fn,
@@ -275,7 +275,7 @@ def train_multi_batch(epoch):
         train_loss += loss.item()
         train_error += error
         preds_list.extend([preds[i].item() for i in range(preds.shape[0])])
-        gt_list.append([gt[i].item() for i in range(gt.shape[0])])
+        gt_list.extend([gt[i].item() for i in range(gt.shape[0])])
 
         # backward pass
         loss.backward()
@@ -469,8 +469,10 @@ if __name__ == "__main__":
     for epoch in range(1, args.epochs + 1):
         # test()
         adjust_learning_rate(optimizer, epoch, args, logger)
-        train(epoch)
+        # train(epoch)
+        train_multi_batch(epoch)
         # test()
+
         if epoch % 5 == 0:
             logger.log_string('Start Testing')
             test(epoch)
