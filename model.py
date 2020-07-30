@@ -439,7 +439,7 @@ class Agg_GAttention(nn.Module):
             A = F.softmax(A, dim=1)  # softmax over N
             M = torch.mm(A, H)
             Y_prob = self.classifier(M)
-        elif batch.shape[0]==A.shape[0]:
+        elif batch.shape[0]==H.shape[0]:
             bag_num = torch.max(batch)[0].item()
             ##TODO: support batch as bag size: [N1, N2...NK]
             ##TODO: implementing with pytorch-scatter
