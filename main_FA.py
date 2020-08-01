@@ -7,8 +7,8 @@ import torch
 import torch.utils.data as data_utils
 import torch.optim as optim
 from torch.autograd import Variable
-
-from dataloader import MnistBags, HISMIL, SimpleMIL
+# from remote_loader import HISMIL
+from dataloader import HISMIL
 from model import Attention, GatedAttention, Res18, Res18_SAFS
 from model import ResBackbone
 from model import Agg_GAttention, Agg_SAttention, Agg_Attention, Agg_Residual
@@ -44,7 +44,7 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='disables CUDA training')
-parser.add_argument('--model', type=str, default='gated_attention',
+parser.add_argument('--model', type=str, default='attention',
                     help='Choose b/w attention and gated_attention')
 parser.add_argument('--mil', type=int, default=0,
                     help='0=Attention_MIL, 1=SimpleMIL')
@@ -59,7 +59,8 @@ parser.add_argument('--ratio', type=float, default=0.8,
                     help='the ratio of train dataset')
 parser.add_argument('--folder', type=int, default=0,
                     help='CV folder')
-
+parser.add_argument('--bs', type=int, default=8,
+                    help='Batch size')
 
 parser.add_argument('--cos', action='store_true',
                     help='use cosine lr schedule')
@@ -70,7 +71,7 @@ parser.add_argument('-a', '--arch', metavar='ARCH', default='resnet18',
                     help='model architecture: ' +
                         ' | '.join(model_names) +
                         ' (default: resnet50)')
-parser.add_argument('--weight', type=float, default=0)
+parser.add_argument('--weight', type=float, default=1)
 parser.add_argument('--data_dir', type=str, default='..',
                     help='local: ../'
                          'remote: /remote-home/my/datasets/BASH')
@@ -132,14 +133,14 @@ aug_test = [transforms.Resize((256, 256)),
 train_dataset = HISMIL(bag_path, 256, aug_train, floder=args.folder, ratio=args.ratio, train=True)
 test_dataset = HISMIL(bag_path, 256, aug_test, floder=args.folder, ratio=args.ratio, train=False)
 ##TODO: Batch enabled loader
-batch_size = 8
+# batch_size = 8
 train_loader = data_utils.DataLoader(train_dataset,
-                                     batch_size=batch_size,
+                                     batch_size=args.bs,
                                      collate_fn= train_dataset.collate_fn,
                                      shuffle=True,
                                      **loader_kwargs)
 test_loader = data_utils.DataLoader(test_dataset,
-                                    batch_size=batch_size,
+                                    batch_size=args.bs,
                                     collate_fn= test_dataset.collate_fn,
                                     shuffle=False,
                                     **loader_kwargs)
@@ -158,26 +159,27 @@ print('Init Model')
 
 
 # memory bank
-data_len = len(train_loader)*48 #WSIs * patches
-memory_bank = MemoryBank(data_len,  config.model_params.out_dim, config.gpu_device) #128D, gpu-id=0
+if args.weight != 0:
+    data_len = len(train_dataset)*48 #WSIs * patches
+    memory_bank = MemoryBank(data_len,  config.model_params.out_dim, config.gpu_device) #128D, gpu-id=0
 # init self-module
-if config.loss_params.loss == 'LocalAggregationLossModule':
-    # init cluster
-    cluster_labels = _init_cluster_labels(config, data_len)
-    Ins_Module = LocalAggregationLossModule(memory_bank.bank_broadcast,
-                     cluster_labels,
-                     k=config.loss_params.k,
-                     t=config.loss_params.t,
-                     m=config.loss_params.m)
-    if config.loss_params.kmeans_freq is None:
-       config.loss_params.kmeans_freq = (
-                len(train_loader) )
-else:
-    Ins_Module = InstanceDiscriminationLossModule(memory_bank.bank_broadcast,
-                     cluster_labels_broadcast=None,
-                     k=config.loss_params.k,
-                     t=config.loss_params.t,
-                     m=config.loss_params.m)
+    if config.loss_params.loss == 'LocalAggregationLossModule':
+        # init cluster
+        cluster_labels = _init_cluster_labels(config, data_len)
+        Ins_Module = LocalAggregationLossModule(memory_bank.bank_broadcast,
+                         cluster_labels,
+                         k=config.loss_params.k,
+                         t=config.loss_params.t,
+                         m=config.loss_params.m)
+        if config.loss_params.kmeans_freq is None:
+           config.loss_params.kmeans_freq = (
+                    len(train_loader) )
+    else:
+        Ins_Module = InstanceDiscriminationLossModule(memory_bank.bank_broadcast,
+                         cluster_labels_broadcast=None,
+                         k=config.loss_params.k,
+                         t=config.loss_params.t,
+                         m=config.loss_params.m)
 
 # feature extractor
 if args.insnorm:
@@ -197,7 +199,6 @@ elif args.model == 'residual':
 if args.cuda:
     model1.cuda()
     model2.cuda()
-
 
 # if args.pretrained:
 #     if os.path.isfile(args.pretrained):
@@ -271,7 +272,7 @@ def train_multi_batch(epoch):
 
         # print info
         CE_loss += ce_loss.item()
-        # INS_loss += ins_loss.item()
+        INS_loss += ins_loss.item()
         train_loss += loss.item()
         train_error += error
         preds_list.extend([preds[i].item() for i in range(preds.shape[0])])
@@ -435,19 +436,20 @@ def test(epoch):
     preds_list = []
     gt_list = []
     with torch.no_grad():
-        for batch_idx, (_, data, label) in enumerate(tqdm(test_loader)):
+        for batch_idx, (_, data, label, batch) in enumerate(tqdm(test_loader)):
             bag_label = label
             # instance_labels = label[1]
             if args.cuda:
                 data, bag_label = data.cuda(), bag_label.cuda()
             data, bag_label = Variable(data), Variable(bag_label)
             feature, _ = model1(data)
-            preds, gt = model2.calculate_classification_error(feature, bag_label)
+            _, _, _, preds, gt = model2.calculate_objective(
+                feature, bag_label, batch=batch)
             # test_loss += loss.item()
             # # error, predicted_label = model.calculate_classification_error(data, bag_label)
             # test_error += error
-            preds_list.append(preds)
-            gt_list.append(gt)
+            preds_list.extend([preds[i].item() for i in range(preds.shape[0])])
+            gt_list.extend([gt[i].item() for i in range(gt.shape[0])])
             # if batch_idx < 5:  # plot bag labels and instance labels for first 5 bags
             #     bag_level = (bag_label.cpu().data.numpy()[0], int(predicted_label.cpu().data.numpy()[0][0]))
             #     instance_level = list(zip(instance_labels.numpy()[0].tolist(),
@@ -467,7 +469,7 @@ if __name__ == "__main__":
     logger.log_string('Start Training')
     print_args(args, logger)
     for epoch in range(1, args.epochs + 1):
-        # test()
+        # test(epoch)
         adjust_learning_rate(optimizer, epoch, args, logger)
         # train(epoch)
         train_multi_batch(epoch)
