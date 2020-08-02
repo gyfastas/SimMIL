@@ -532,7 +532,6 @@ class Agg_SAttention(AggNet):
         A_U = self.attention_U(H)  # NxD
         A = self.attention_weights(A_V * A_U) # element wise multiplication # NxK
         A = torch.transpose(A, 1, 0)  # KxN
-        A = F.softmax(A, dim=1)  # softmax over N
         if batch is None:
             A = F.softmax(A, dim=1)  # softmax over N
             M = torch.mm(A, H)
@@ -581,7 +580,6 @@ class Agg_Attention(AggNet):
     def forward(self, H, batch=None):
         A = self.attention(H)  # NxK
         A = torch.transpose(A, 1, 0)  # KxN
-        A = F.softmax(A, dim=1)  # softmax over N
         if batch is None:
             A = F.softmax(A, dim=1)  # softmax over N
             M = torch.mm(A, H)
@@ -601,8 +599,6 @@ class Agg_Attention(AggNet):
         # Y_hat = torch.ge(Y_prob, 0.5).float()
         return Y_prob, A
 
-
-
 class GraphMILNet(nn.Module):
     """
     Notes:
@@ -621,7 +617,7 @@ class GraphMILNet(nn.Module):
         edge_index = dense_to_sparse(A)[0]  # [2, E]
         x = self.gcn(x, edge_index)
         return self.aggregator(x, A)
-class Agg_Residual(nn.Module):
+class Agg_Residual(AggNet):
     def __init__(self):
         super(Agg_Residual, self).__init__()
         self.L = 512
@@ -654,48 +650,24 @@ class Agg_Residual(nn.Module):
         self.GCNblock = GraphMILNet(self.graph_builder, self.gcn, self.aggregator)
         self.classifier = nn.Linear(self.L * self.K, 4)
 
-    def forward(self, H):
+    def forward(self, H, batch=None):
         A_V = self.attention_V(H)  # NxD
         A_U = self.attention_U(H)  # NxD
         A = self.attention_weights(A_V * A_U)  # element wise multiplication # NxK
         A = torch.transpose(A, 1, 0)  # KxN
-        A = F.softmax(A, dim=1)  # softmax over N
+        if batch is None:
+            A = F.softmax(A, dim=1)  # softmax over N
+            M = torch.mm(A, H)
+            Y_prob = self.classifier(M)
+        elif batch.shape[0]==H.shape[0]:
+            bag_num = torch.max(batch) + 1
+            ##TODO: support batch as bag size: [N1, N2...NK]
+            ##TODO: implementing with pytorch-scatter
 
-        M = torch.mm(A, H)  # KxL
-        G = self.GCNblock(H)
-        M += G.unsqueeze(0)
-        Y_prob = self.classifier(M)
-        # Y_hat = torch.argmax(Y_prob).float()
-        # Y_hat = torch.ge(Y_prob, 0.5).float()
+            M = [torch.mm(F.softmax(A.squeeze(0)[batch==i].unsqueeze(0), dim=1), H[batch==i]) for i in range(0, bag_num)]
+            G = [self.GCNblock(H[batch==i]) for i in range(0, bag_num)]
+            A = [F.softmax(A.squeeze(0)[batch == i]) for i in range(0, bag_num)]
+            Y_prob = torch.cat([self.classifier(M[i]+G[i].unsqueeze(0)) for i in range(0, bag_num)]) # [bg_num, 4]bib
+
         return Y_prob, A
 
-    # # AUXILIARY METHODS
-    # def calculate_classification_error(self, X, Y):
-    #     Y = Y.float()
-    #     _, Y_hat, _ = self.forward(X)
-    #
-    #     error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
-    #
-    #     return error, Y_hat
-    def calculate_classification_error(self, X, Y):
-        Y = Y.float()
-        Y_prob, _ = self.forward(X)
-        # Y_hat = torch.argmax(Y_prob, dim=1).float().max()
-        Y_hat = torch.argmax(Y_prob, dim=1).float()
-        # _, counts = torch.unique(Y_hat, sorted=True, return_counts=True)
-        # Y_hat = torch.argmax(counts)
-        # error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
-
-        return Y_hat.cpu(), Y.cpu()
-
-    def calculate_objective(self, X, Y):
-        Y_prob, A = self.forward(X)
-        # Y_hat = torch.ge(Y_prob, 0.5).float()
-
-        # Y_prob = torch.clamp(Y_prob, min=1e-5, max=1. - 1e-5)
-        # neg_log_likelihood = -1. * (Y * torch.log(Y_prob) + (1. - Y) * torch.log(1. - Y_prob))  # negative log bernoulli
-        Y_hat = torch.argmax(Y_prob).float()
-        neg_log_likelihood = self.criterion(Y_prob, Y)
-        Y = Y.float()
-        error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
-        return neg_log_likelihood, error, A, torch.argmax(Y_prob).item(), Y.item()
