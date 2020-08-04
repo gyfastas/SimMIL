@@ -103,6 +103,95 @@ class HISMIL(ImageFolder):
     def __len__(self):
         return len(self.folder)
 
+
+class HISMIL_DoubleAug(ImageFolder):
+    def __init__(self, root, patch_size, transform, floder=0, ratio=0.7, train=False):
+        super(HISMIL_DoubleAug, self).__init__(root)
+        self.patch_size = patch_size
+        self.classes = 4
+        self.classes_len = 100
+        self.transform = transform
+        # self._save_patches()
+        self.folder = self._shuffle_CV(floder, ratio, train)
+
+    # def _save_patches(self):
+    #     import os
+    #     for path, target in self.samples:
+    #         slide = openslide.open_slide(path)
+    #         dz = DeepZoomGenerator(slide, self.patch_size, 0, True)
+    #         x_idx, y_dx = dz.level_tiles[dz.level_count - 1]
+    #         if self.train:
+    #             patch_path = os.path.join('/home/tclin/Downloads/ICIAR2018_BACH_Challenge/datasets/patch/train', path.split('/')[7])
+    #         else:
+    #             patch_path = os.path.join('/home/tclin/Downloads/ICIAR2018_BACH_Challenge/datasets/patch/test',
+    #                                       path.split('/')[7])
+    #         if not os.path.exists(patch_path):
+    #             os.makedirs(patch_path)
+    #         # bag_list = torch.tensor([])
+    #         for i in range(x_idx - 1):
+    #             for j in range(y_dx - 1):
+    #                 sample = dz.get_tile(dz.level_count - 1, (i, j))
+    #
+    #                 patch_name = path.split('/')[-1].split('.')[0]+ '_' + str(i) + '_' + str(j)+'.png'
+    #                 # patch_path = os.path.join(path.split('.')[0], str(i) + '_' + str(j)+'.png')
+    #                 sample.save(os.path.join(patch_path,patch_name))
+    def _shuffle_CV(self, floder, ratio, train):
+        shuffle_idx = shuffle_index[floder]
+        chosen_list = []
+        if train:
+            chosen_idx = shuffle_idx[:int(ratio * len(shuffle_idx))]
+        else:
+            chosen_idx = shuffle_idx[int(ratio * len(shuffle_idx)):]
+        for i in range(self.classes):
+            tmp_class_sample = self.samples[i * self.classes_len:(i + 1) * self.classes_len]
+            chosen_list += [tmp_class_sample[k] for k in chosen_idx]
+        return chosen_list
+
+    def collate_fn(self, batch):
+        idx_lists = [x[0] for x in batch]
+        bag_lists1 = [x[1][0] for x in batch]
+        bag_lists2 = [x[1][1] for x in batch]
+        targets = [x[2] for x in batch]
+        batches = []
+        for i in range(len(batch)):
+            batches.extend([i] * len(idx_lists[i]))
+
+        batches = torch.tensor(batches).long()
+        return torch.cat(idx_lists), (torch.cat(bag_lists1), torch.cat(bag_lists2)), torch.cat(targets), batches
+
+    def __getitem__(self, index):
+        path, target = self.folder[index]
+        # if target >1:
+        #     target = torch.tensor([1]).long()
+        # else:
+        #     target = torch.tensor([0]).long()
+        # sample = self.loader(path)
+        slide = openslide.open_slide(path)
+        dz = DeepZoomGenerator(slide, self.patch_size, 0, True)
+        x_idx, y_idx = dz.level_tiles[dz.level_count - 1]
+        bag_list1 = torch.tensor([])
+        bag_list2 = torch.tensor([])
+        idx_list = torch.tensor([]).long()
+        cnt = 0
+        idx_init = index * x_idx * y_idx
+        for i in range(x_idx):
+            for j in range(y_idx):
+                sample = dz.get_tile(dz.level_count - 1, (i, j))
+                idx = idx_init + cnt
+                cnt += 1
+                if self.transform is not None:
+                    sample = self.transform(sample)
+                if self.target_transform is not None:
+                    target = self.target_transform(target)
+                bag_list1 = torch.cat((bag_list1, sample[0].unsqueeze(0)))
+                bag_list2 = torch.cat((bag_list2, sample[1].unsqueeze(0)))
+                idx_list = torch.cat((idx_list, torch.tensor([idx])))
+        # batch_idx = torch.ones_like(idx_list)*index
+        return idx_list, (bag_list1, bag_list2), torch.tensor([target]).long()
+
+    def __len__(self):
+        return len(self.folder)
+
 class SimpleMIL(ImageFolder):
     def __init__(self, root, train=True):
         super(SimpleMIL, self).__init__(root)

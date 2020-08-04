@@ -2,11 +2,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
-import math
 from GraphMIL.GraphBuilder.KNNGraphBuilder import KNNGraphBuilder
 from GraphMIL.GCN.GCNConv import GCNConv
 from GraphMIL.Aggregator.GraphWeightedAvgPooling import GraphWeightedAvgPooling
 from torch_geometric.utils import dense_to_sparse
+
+import math
+
 class Attention(nn.Module):
     def __init__(self):
         super(Attention, self).__init__()
@@ -185,6 +187,7 @@ class GatedAttention(nn.Module):
         Y = Y.float()
         error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
         return neg_log_likelihood, error, A, torch.argmax(Y_prob).item(), Y.item()
+
 
 class Res18(nn.Module):
     def __init__(self):
@@ -373,7 +376,9 @@ class SelfAttention(nn.Module):
             p_attn = dropout(p_attn)
 
         return torch.matmul(p_attn, value)
-# Backbone
+
+#2. backbone+Agg
+# 2.1 Backbone
 class ResBackbone(nn.Module):
     def __init__(self, arch, pretrained):
         super(ResBackbone, self).__init__()
@@ -402,7 +407,7 @@ class ResBackbone(nn.Module):
         x = x.view(x.size(0), -1)
         self_feat = self.fc(x)
         return x, self_feat
-# Agg
+# 2.2 Agg
 class AggNet(nn.Module):
     def __init__(self):
         super(AggNet, self).__init__()
@@ -598,7 +603,7 @@ class Agg_Attention(AggNet):
         # Y_hat = torch.argmax(Y_prob).float()
         # Y_hat = torch.ge(Y_prob, 0.5).float()
         return Y_prob, A
-
+# residual = gcn +attention
 class GraphMILNet(nn.Module):
     """
     Notes:
@@ -613,10 +618,11 @@ class GraphMILNet(nn.Module):
         self.aggregator = aggregator
 
     def forward(self, x):
-        x, A = self.graph_builder(x)
+        A = self.graph_builder(x)
         edge_index = dense_to_sparse(A)[0]  # [2, E]
         x = self.gcn(x, edge_index)
         return self.aggregator(x, A)
+
 class Agg_Residual(AggNet):
     def __init__(self):
         super(Agg_Residual, self).__init__()
@@ -671,3 +677,70 @@ class Agg_Residual(AggNet):
 
         return Y_prob, A
 
+class Agg_Res_self(AggNet):
+    def __init__(self, dropout=0.1):
+        super(Agg_Res_self, self).__init__()
+        self.L = 512
+        self.D = 128
+        self.K = 1
+        self.knn = 3
+        self.dk = 64
+        self.criterion = nn.CrossEntropyLoss()
+        self.attention_weights = nn.Linear(self.D, self.K)
+
+        self.classifier = nn.Linear(self.L * self.K, 4)
+
+        # self attention
+        self.SA1 = nn.Linear(self.L, self.dk)
+        self.SA2 = nn.Linear(self.L, self.dk)
+        self.SA = SelfAttention()
+        self.dropout = nn.Dropout(dropout)
+        # gated attention
+        self.attention = nn.Sequential(
+            nn.Linear(self.L, self.D),
+            nn.Tanh(),
+            nn.Linear(self.D, self.K)
+        )
+        self.attention_V = nn.Sequential(
+            nn.Linear(self.L, self.D),
+            nn.Tanh()
+        )
+
+        self.attention_U = nn.Sequential(
+            nn.Linear(self.L, self.D),
+            nn.Sigmoid()
+        )
+
+        self.attention_weights = nn.Linear(self.D, self.K)
+
+        # GCN
+        self.graph_builder = KNNGraphBuilder(self.knn)
+        self.gcn = GCNConv(self.L, self.L)
+        self.aggregator = GraphWeightedAvgPooling()
+        self.GCNblock = GraphMILNet(self.graph_builder, self.gcn, self.aggregator)
+        self.classifier = nn.Linear(self.L * self.K, 4)
+
+    def forward(self, H, batch=None):
+        Q = self.SA1(H)
+        K = self.SA2(H)
+        H = self.SA(Q, K, H, mask=None, dropout=self.dropout)
+
+        A_V = self.attention_V(H)  # NxD
+        A_U = self.attention_U(H)  # NxD
+        A = self.attention_weights(A_V * A_U)  # element wise multiplication # NxK
+        A = torch.transpose(A, 1, 0)  # KxN
+        if batch is None:
+            A = F.softmax(A, dim=1)  # softmax over N
+            M = torch.mm(A, H)
+            Y_prob = self.classifier(M)
+        elif batch.shape[0]==H.shape[0]:
+            bag_num = torch.max(batch) + 1
+            ##TODO: support batch as bag size: [N1, N2...NK]
+            ##TODO: implementing with pytorch-scatter
+
+            M = [torch.mm(F.softmax(A.squeeze(0)[batch==i].unsqueeze(0), dim=1), H[batch==i]) for i in range(0, bag_num)]
+            G = [self.GCNblock(H[batch==i]) for i in range(0, bag_num)]
+            A = [F.softmax(A.squeeze(0)[batch == i]) for i in range(0, bag_num)]
+            Y_prob = torch.cat([self.classifier(M[i]+G[i].unsqueeze(0)) for i in range(0, bag_num)]) # [bg_num, 4]bib
+
+        return Y_prob, A

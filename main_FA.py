@@ -9,9 +9,10 @@ import torch.optim as optim
 from torch.autograd import Variable
 # from remote_loader import HISMIL
 from dataloader import HISMIL
-from model import Attention, GatedAttention, Res18, Res18_SAFS
-from model import ResBackbone
-from model import Agg_GAttention, Agg_SAttention, Agg_Attention, Agg_Residual
+from Builder.e2e import Attention, GatedAttention, Res18, Res18_SAFS
+from Builder.FeaAgg import ResBackbone
+from Builder.FeaAgg import Agg_GAttention, Agg_SAttention, Agg_Attention, Agg_Residual, Agg_Res_self
+from Builder.GraphCon import GraphCon
 from tqdm import tqdm
 import numpy as np
 import math
@@ -24,6 +25,7 @@ import random
 from logger import Logger
 import datetime
 from utils.utils import MemoryBank, InstanceDiscriminationLossModule, LocalAggregationLossModule, Kmeans
+
 from utils.setup import process_config
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
@@ -59,7 +61,7 @@ parser.add_argument('--ratio', type=float, default=0.8,
                     help='the ratio of train dataset')
 parser.add_argument('--folder', type=int, default=0,
                     help='CV folder')
-parser.add_argument('--bs', type=int, default=8,
+parser.add_argument('--bs', type=int, default=1,
                     help='Batch size')
 
 parser.add_argument('--cos', action='store_true',
@@ -195,7 +197,8 @@ elif args.model == 'self':
     model2 = Agg_SAttention()
 elif args.model == 'residual':
     model2 = Agg_Residual()
-
+elif args.model == 'resself':
+    model2 = Agg_Res_self()
 if args.cuda:
     model1.cuda()
     model2.cuda()
@@ -257,8 +260,8 @@ def train_multi_batch(epoch):
         optimizer.zero_grad()
         # calculate loss and metrics
 
-        feature, self_feat = model1(data)  # feature:
-        ce_loss, error, _, preds, gt = model2.calculate_objective(
+        feature, self_feat = model1(data)  # feature:[N,512], self_feat:[N,128]
+        ce_loss, error, preds, gt = model2.calculate_objective(
             feature, bag_label, batch=batch) ##preds: [N] , gt： [N]
 
         # print(ce_loss, iwns_loss)
@@ -272,7 +275,8 @@ def train_multi_batch(epoch):
 
         # print info
         CE_loss += ce_loss.item()
-        INS_loss += ins_loss.item()
+        if args.weight != 0:
+            INS_loss += ins_loss.item()
         train_loss += loss.item()
         train_error += error
         preds_list.extend([preds[i].item() for i in range(preds.shape[0])])
