@@ -22,6 +22,11 @@ from termcolor import colored
 
 
 DEFAULT_KMEANS_SEED = 1234
+
+def find_class_by_name(name, modules):
+  """Searches the provided modules for the named class and returns it."""
+  modules = [getattr(module, name, None) for module in modules]
+  return next(a for a in modules if a)
 def fix_bn(m):
     classname = m.__class__.__name__
     if classname.find('BatchNorm') != -1:
