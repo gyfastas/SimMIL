@@ -20,7 +20,7 @@ class GraphMILNet(nn.Module):
         self.dense_aggregation = dense_aggregation
     
     def forward(self, x):
-        x, A = self.graph_builder(x)
+        A = self.graph_builder(x)
         edge_index = dense_to_sparse(A)[0] #[2, E]
         x = self.gcn(x, edge_index)
         if self.dense_aggregation:

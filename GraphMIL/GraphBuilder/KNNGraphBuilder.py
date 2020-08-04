@@ -24,11 +24,12 @@ class KNNGraphBuilder(nn.Module):
         self.K = K
 
     def forward(self, x):
+        x = nn.functional.normalize(x, dim=1)
         similarity_matrix = torch.matmul(x, x.T) # (B*D, D*B) -> (B, B)
         ## Build adjacent matrix
         _, idxs = similarity_matrix.topk(self.K)
         adjacent_matrix = topk_to_adjacent(similarity_matrix, idxs) #(B, K) -> (B, B) Adjacent Matrix
-        return x, adjacent_matrix
+        return adjacent_matrix
 
 if __name__=="__main__":
     x = nn.functional.normalize(torch.randn([4, 128]))
