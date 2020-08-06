@@ -38,51 +38,46 @@ from utils.utils import find_class_by_name
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch MNIST bags Example')
+# optimizer
 parser.add_argument('--epochs', type=int, default=200, metavar='N',
                     help='number of epochs to train (default: 20)')
 parser.add_argument('--lr', type=float, default=0.00001, metavar='LR',
                     help='learning rate (default: 0.0005)')
-parser.add_argument('--reg', type=float, default=10e-5, metavar='R',
+parser.add_argument('--reg', type=float, default=0, metavar='R',
                     help='weight decay')
-parser.add_argument('--seed', type=int, default=1, metavar='S',
-                    help='random seed (default: 1)')
-parser.add_argument('--no-cuda', action='store_true', default=False,
-                    help='disables CUDA training')
-
-parser.add_argument('--mil', type=int, default=0,
-                    help='0=Attention_MIL, 1=SimpleMIL')
-#############################################################
-parser.add_argument('--pretrained', action='store_true', default=False,
-                    help='imagenet_pretrained and fix_bn to aviod shortcut')
-# parser.add_argument('--fixbn', action='store_true', default=False,
-#                     help='fix bn')
-parser.add_argument('--insnorm', action='store_true', default=False,
-                    help='Ins norm')
-parser.add_argument('--ratio', type=float, default=0.8,
-                    help='the ratio of train dataset')
-parser.add_argument('--folder', type=int, default=0,
-                    help='CV folder')
 parser.add_argument('--bs', type=int, default=4,
                     help='Batch size')
-
-parser.add_argument('--cos', action='store_true',
+parser.add_argument('--seed', type=int, default=1, metavar='S',
+                    help='random seed (default: 1)')
+parser.add_argument('--cuda', action='store_true', default=True,
+                    help='disables CUDA training')
+parser.add_argument('--cos', action='store_true', default=True,
                     help='use cosine lr schedule')
 parser.add_argument('--schedule', default=[120, 160], nargs='*', type=int,
                     help='learning rate schedule (when to drop lr by 10x)')
-
+#############################################################
+parser.add_argument('--pretrained', action='store_true', default=True,
+                    help='imagenet_pretrained and fix_bn to aviod shortcut')
 parser.add_argument('-a', '--arch', metavar='ARCH', default='resnet18',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
                         ' (default: resnet50)')
-parser.add_argument('--attention', type=str, default='Agg_GAttention',
-                    help='Choose b/w attention and gated_attention')
+parser.add_argument('--attention', type=str, default='Agg_SAttention',
+                    help='Agg_GAttention/Agg_SAttention/Agg_Attention')
 parser.add_argument('--graph', type=str, default='GraphMILNet',
                     help='Choose graph')
-
+parser.add_argument('--n_topk', type=int, default=4,
+                    help='K of KNN')
+# loss weight
 parser.add_argument('--weight_self', type=float, default=0)
-parser.add_argument('--weight_mse', type=float, default=0.1)
+parser.add_argument('--weight_mse', type=float, default=0)
 parser.add_argument('--weight_l1', type=float, default=0)
+# Data and logging
+parser.add_argument('--ratio', type=float, default=0.8,
+                    help='the ratio of train dataset')
+parser.add_argument('--folder', type=int, default=0,
+                    help='CV folder')
 parser.add_argument('--data_dir', type=str, default='..',
                     help='local: ../'
                          'remote: /remote-home/my/datasets/BASH')
@@ -93,8 +88,6 @@ parser.add_argument('--config', type=str, default='./config/imagenet_ir.json',
 
 args = parser.parse_args()
 config = process_config(args.config)
-
-args.cuda = not args.no_cuda and torch.cuda.is_available()
 
 torch.manual_seed(args.seed)
 
@@ -143,8 +136,7 @@ train_dataset = HISMIL_DoubleAug(bag_path, 256, TwoCropsTransform(transforms.Com
                                  floder=args.folder, ratio=args.ratio, train=True)
 test_dataset = HISMIL_DoubleAug(bag_path, 256, TwoCropsTransform(transforms.Compose(aug_test)),
                                 floder=args.folder, ratio=args.ratio, train=False)
-##TODO: Batch enabled loader
-# batch_size = 8
+
 train_loader = data_utils.DataLoader(train_dataset,
                                      batch_size=args.bs,
                                      collate_fn=train_dataset.collate_fn,
@@ -192,27 +184,14 @@ if args.weight_self != 0:
                          t=config.loss_params.t,
                          m=config.loss_params.m)
 
-# feature extractor
-# if args.insnorm:
-#     model1 = resnet18(num_classes=128)
-# else:
-#     model1 = ResBackbone(args.arch, args.pretrained)
-# aggregation
+
 attention = find_class_by_name(args.attention, [FeaAgg])
 if args.graph is not None:
     graph = find_class_by_name(args.graph, [FeaAgg])
 else:
     graph = None
-model = GraphCon(ResBackbone, AggNet, args.arch, args.pretrained, 0.9, attention, graph, n_topk=3)
-# if args.model == 'attention':
-# if args.model == 'gated_attention':
-#     model = GraphCon(ResBackbone,  Agg_GAttention, args.arch, args.pretrained, 0.9)
-# elif args.model == 'self':
-#     model = GraphCon(ResBackbone, Agg_SAttention, args.arch, args.pretrained, 0.9)
-# elif args.model == 'residual':
-#     model = GraphCon(ResBackbone, Agg_Residual, args.arch, args.pretrained, 0.9)
-# elif args.model == 'resself':
-#     model = GraphCon(ResBackbone, Agg_Res_self, args.arch, args.pretrained, 0.9)
+model = GraphCon(ResBackbone, AggNet, args.arch, args.pretrained, 0.9, attention, graph, n_topk=args.n_topk)
+
 if args.cuda:
     model.cuda()
 
@@ -246,17 +225,14 @@ if args.cuda:
 # parameters = list(filter(lambda p: p.requires_grad, model2.parameters()))
 print(model)
 parameters = [{'params': model.parameters()}]
-
-
 optimizer = optim.Adam(parameters, lr=args.lr, betas=(0.9, 0.999), weight_decay=args.reg)
+
 criterion_ce = nn.CrossEntropyLoss()
 criterion_mse = nn.MSELoss(reduction='sum')
 criterion_l1 = nn.L1Loss()
 
 def train_multi_batch(epoch):
     model.train()
-    if not args.insnorm:
-        model.apply(fix_bn)
     train_loss = 0.
     CE_loss = 0.
     INS_loss = 0.
@@ -273,28 +249,29 @@ def train_multi_batch(epoch):
         if args.cuda:
             img_k, img_q, bag_label, idx, batch = img_k.cuda(), img_q.cuda(), bag_label.cuda(), idx.cuda(), batch.cuda()
 
-
         # reset gradients
         optimizer.zero_grad()
         # calculate loss and metrics
-
         preds, (graph1, graph2), (global_feat1, global_feat2), (self_feat1, self_feat2) = model(img_k, img_q, batch=batch) ##preds: [N] , gt： [N]
+
         ce_loss = criterion_ce(preds, bag_label)
-        mse_loss = criterion_mse(graph1, graph2)/data[0].shape[0]
-        l1_loss = criterion_l1(global_feat1, global_feat2)
+        if graph1 is not None:
+            mse_loss = criterion_mse(graph1, graph2)/data[0].shape[0]
+        if global_feat1 is not None:
+            l1_loss = criterion_l1(global_feat1, global_feat2)
         if args.weight_self != 0:
             ins_loss, new_data_memory = Ins_Module(
                 idx, self_feat1, torch.arange(len(config.gpu_device)))
-            loss = ce_loss + args.weight_self * ins_loss
+            loss = ce_loss + args.weight_self * ins_loss + args.weight_mse * mse_loss +args.weight_l1* l1_loss
         else:
-            loss = ce_loss + args.weight_mse * mse_loss +args.weight_l1* l1_loss
-
-
+            loss = ce_loss + args.weight_mse * mse_loss + args.weight_l1 * l1_loss
 
         # print info
         CE_loss += ce_loss.item()
-        MSE_loss += mse_loss.item()
-        L1_loss +=l1_loss.item()
+        if args.weight_mse != 0:
+            MSE_loss += mse_loss.item()
+        if args.weight_l1 != 0:
+            L1_loss +=l1_loss.item()
         if args.weight_self != 0:
             INS_loss += ins_loss.item()
         train_loss += loss.item()
@@ -336,8 +313,6 @@ def train_multi_batch(epoch):
     L1_loss /= len(train_loader)
     train_loss /= len(train_loader)
     logger.log_string('====================Train')
-    # logger.log_string('Epoch: {}, ceLoss: {:.4f}, Train error: {:.4f}'
-    #                   .format(epoch, ce_loss.item(), train_error))
     logger.log_string('Epoch: {}, ceLoss: {:.4f}, insLoss: {:.4f}, MseLoss: {:.4f}, L1Loss: {:.4f},Train loss: {:.4f}'
                       .format(epoch, CE_loss, INS_loss, MSE_loss, L1_loss, train_loss))
     cal_metrics_train(preds_list, gt_list, args, logger, epoch)
@@ -346,8 +321,6 @@ def train_multi_batch(epoch):
 
 def test(epoch):
     model.eval()
-
-
     test_loss = 0.
     test_error = 0.
     preds_list = []
@@ -357,8 +330,6 @@ def test(epoch):
             bag_label = label
             img_k = data[0]
             img_q = data[1]
-            # idx = idx.squeeze(0)
-            # print(idx)
             if args.cuda:
                 img_k, img_q, bag_label = img_k.cuda(), img_q.cuda(), bag_label.cuda()
 

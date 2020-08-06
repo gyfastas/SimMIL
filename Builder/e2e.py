@@ -359,10 +359,11 @@ class SelfAttention(nn.Module):
     Compute 'Scaled Dot Product Attention
     """
 
-    def forward(self, query, key, value, mask=None, dropout=None):
+    def forward(self, query, key, value, mask=None, dropout=None, batch=None):
         scores = torch.matmul(query, key.transpose(-2, -1)) \
                  / math.sqrt(query.size(-1))
-
+        if batch is not None:
+            mask =torch.eq(*torch.meshgrid(batch, batch)).long()
         if mask is not None:
             scores = scores.masked_fill(mask == 0, -1e9)
 

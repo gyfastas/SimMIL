@@ -42,12 +42,14 @@ class ResBackbone(nn.Module):
         return x, self_feat
 # 2.2 Agg
 class AggNet(nn.Module):
-    def __init__(self, attention, graph, n_topk):
+    def __init__(self, attention, graph, n_topk, residual):
         super(AggNet, self).__init__()
         self.L = 512
         self.D = 128
         self.K = 1
+        self.residual = residual
         self.attention = attention()
+        self.criterion = nn.CrossEntropyLoss()
         if graph is not None:
             self.graph = graph(n_topk)
         else:
@@ -55,7 +57,7 @@ class AggNet(nn.Module):
         self.classifier = nn.Linear(self.L*self.K, 4)
 
     def forward(self, H, batch):
-        attention = self.attention(H)
+        attention = self.attention(H, batch)
         preds, Affinity, G = self.multi_batch(H, attention, batch)
         return preds, Affinity, G
 
@@ -72,7 +74,7 @@ class AggNet(nn.Module):
         elif batch.shape[0] == H.shape[0]:
             bag_num = torch.max(batch)+1
             indicator = F.one_hot(batch, bag_num).float()
-            A = torch.mul(torch.transpose(A, 1, 0) ,indicator)
+            A = torch.mul(torch.transpose(A, 1, 0), indicator)
             A = torch.softmax(A.sub((1 - indicator).mul(65535)), dim=0)
             M = torch.mm(A.T, H)
             if self.graph is not None:
@@ -80,7 +82,8 @@ class AggNet(nn.Module):
                 # G = torch.cat([self.GCNblock(H[batch == i])[0].unsqueeze(0) for i in range(0, bag_num)])
                 # Affinity = torch.cat([self.GCNblock(H[batch == i])[1].unsqueeze(0) for i in range(0, bag_num)])
                 # # Attention = [F.softmax(A.squeeze(0)[batch == i]) for i in range(0, bag_num)]
-                M = M + G
+                if self.residual:
+                    M = M + G
         Y_prob = self.classifier(M)
         return Y_prob, Affinity, G
 
@@ -181,7 +184,7 @@ class Agg_SAttention(nn.Module):
     def forward(self, H, batch=None):
         Q = self.SA1(H)
         K = self.SA2(H)
-        H = self.SA(Q, K, H, mask=None, dropout=self.dropout)
+        H = self.SA(Q, K, H, mask=None, dropout=self.dropout, batch=batch)
 
 
         A_V = self.attention_V(H)  # NxD
@@ -246,7 +249,7 @@ class GraphMILNet(nn.Module):
 
     def construct_adjacent_matrix(self, correlation_map, indicator, n_topk):
         batch_size = correlation_map.size(0)
-        subgraph_mask = torch.eq(*torch.meshgrid(indicator, indicator)).long()  # (batch_size, batch_size)
+        subgraph_mask = torch.eq(*torch.meshgrid(indicator, indicator)).long() # (batch_size, batch_size)
         # mask connections among nodes from different subgraphs
         adjacent_matrix = torch.mul(correlation_map, subgraph_mask)
         # get indices of non-topk elements
@@ -258,7 +261,7 @@ class GraphMILNet(nn.Module):
     def aggregate_features_in_bag(self, features, indicator, n_bags, attention_coefficients=None):
         # features should be of shape (batch_size, n_channels)
         # attention_coefficients should be of shape (batch_size, 1)
-        indicator_onehot = F.one_hot(indicator, num_classes=n_bags).float()  # (batch_size, n_bags)
+        indicator_onehot = F.one_hot(indicator, num_classes=n_bags).float() # (batch_size, n_bags)
         if attention_coefficients is not None:
             attention_coefficients = torch.mul(indicator_onehot,
                                                attention_coefficients.view(-1, 1))  # (batch_size, n_bags)
