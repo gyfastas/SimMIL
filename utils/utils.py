@@ -67,7 +67,13 @@ def adjust_learning_rate(optimizer, epoch, args, logger):
         logger.log_string('lr:{}'.format(lr))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
-
+def adjust_weight(weight, epoch, args):
+    if epoch >= (args.epochs/2):
+        weight = weight
+    else:
+        weight *= 0.5 * (1. + math.cos(math.pi * (args.epochs/2-epoch) / (args.epochs/2)))
+    print('weight{}'.format(weight))
+    return weight
 def print_args(args, logger):
     logger.log_string("==========================================")
     logger.log_string("==========       CONFIG      =============")
@@ -76,7 +82,7 @@ def print_args(args, logger):
         logger.log_string("{}:{}".format(arg, content))
     logger.log_string("\n")
 
-def cal_metrics(preds, gt, args, logger, epoch):
+def cal_metrics(preds, gt, args, logger, epoch,mode):
     preds = np.array(preds)
     gt = np.array(gt)
     target_names = ['normal', 'ITC', 'micro', 'macro']
@@ -85,26 +91,26 @@ def cal_metrics(preds, gt, args, logger, epoch):
     logger.log_string(cls_rep)
     logger.log_string(con_ma)
     cls_rep_dic = classification_report(gt, preds, target_names=target_names, output_dict=True)
-    logger.log_scalar_eval('acc', cls_rep_dic['accuracy'], epoch)
-def cal_metrics_train(preds, gt, args, logger, epoch):
-    if args.mil == 1:
-        preds = np.concatenate(preds)
-        gt = np.concatenate(gt)
-
-    else:
-        preds = np.array(preds)
-        gt = np.array(gt)
-    # fpr, tpr, thresholds = metrics.roc_curve(gt, preds, pos_label=1)
-    # AUC = metrics.auc(fpr, tpr)
-    # y_pred = (preds>0.5).astype(int)
-    # print('AUC:', AUC)
-    target_names = ['normal', 'ITC', 'micro', 'macro']
-    cls_rep_str = classification_report(gt, preds, target_names=target_names, output_dict=False)
-    con_ma = confusion_matrix(gt, preds)
-    logger.log_string(cls_rep_str)
-    logger.log_string(con_ma)
-    cls_rep_dic = classification_report(gt, preds, target_names=target_names, output_dict=True)
-    logger.log_scalar_train('acc', cls_rep_dic['accuracy'], epoch)
+    logger.log_scalar(mode, 'acc', cls_rep_dic['accuracy'], epoch)
+# def cal_metrics_train(preds, gt, args, logger, epoch):
+#     if args.mil == 1:
+#         preds = np.concatenate(preds)
+#         gt = np.concatenate(gt)
+#
+#     else:
+#         preds = np.array(preds)
+#         gt = np.array(gt)
+#     # fpr, tpr, thresholds = metrics.roc_curve(gt, preds, pos_label=1)
+#     # AUC = metrics.auc(fpr, tpr)
+#     # y_pred = (preds>0.5).astype(int)
+#     # print('AUC:', AUC)
+#     target_names = ['normal', 'ITC', 'micro', 'macro']
+#     cls_rep_str = classification_report(gt, preds, target_names=target_names, output_dict=False)
+#     con_ma = confusion_matrix(gt, preds)
+#     logger.log_string(cls_rep_str)
+#     logger.log_string(con_ma)
+#     cls_rep_dic = classification_report(gt, preds, target_names=target_names, output_dict=True)
+#     logger.log_scalar_train('acc', cls_rep_dic['accuracy'], epoch)
 
 def l2_normalize(x, dim=1):
     return x / torch.sqrt(torch.sum(x**2, dim=dim).unsqueeze(dim))

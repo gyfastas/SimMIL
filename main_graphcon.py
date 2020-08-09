@@ -30,11 +30,11 @@ from utils.setup import process_config
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(models.__dict__[name]))
-from utils.utils import fix_bn, GaussianBlur, adjust_learning_rate, print_args, cal_metrics, cal_metrics_train,\
+from utils.utils import fix_bn, GaussianBlur, adjust_learning_rate, print_args, cal_metrics, \
     _init_cluster_labels
 from models.resnet import resnet18
 import torch.nn as nn
-from utils.utils import find_class_by_name
+from utils.utils import find_class_by_name, adjust_weight
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch MNIST bags Example')
@@ -63,15 +63,19 @@ parser.add_argument('-a', '--arch', metavar='ARCH', default='resnet18',
                     help='model architecture: ' +
                         ' | '.join(model_names) +
                         ' (default: resnet50)')
-parser.add_argument('--attention', type=str, default='Agg_SAttention',
+parser.add_argument('--attention', type=str, default='Agg_Attention',
                     help='Agg_GAttention/Agg_SAttention/Agg_Attention')
 parser.add_argument('--graph', type=str, default='GraphMILNet',
                     help='Choose graph')
 parser.add_argument('--n_topk', type=int, default=4,
                     help='K of KNN')
+parser.add_argument('--agg_mode', type=str, default='attention',
+                    help='attention/graph/residual(concat)')
+parser.add_argument('--ema', type=float, default=0.99, metavar='EMA',
+                    help='exponential moving average')
 # loss weight
 parser.add_argument('--weight_self', type=float, default=0)
-parser.add_argument('--weight_mse', type=float, default=0)
+parser.add_argument('--weight_mse', type=float, default=1)
 parser.add_argument('--weight_l1', type=float, default=0)
 # Data and logging
 parser.add_argument('--ratio', type=float, default=0.8,
@@ -184,13 +188,16 @@ if args.weight_self != 0:
                          t=config.loss_params.t,
                          m=config.loss_params.m)
 
+# choose agg model
 
 attention = find_class_by_name(args.attention, [FeaAgg])
-if args.graph is not None:
-    graph = find_class_by_name(args.graph, [FeaAgg])
-else:
-    graph = None
-model = GraphCon(ResBackbone, AggNet, args.arch, args.pretrained, 0.9, attention, graph, n_topk=args.n_topk)
+graph = find_class_by_name(args.graph, [FeaAgg])
+consistent = (args.weight_mse != 0) | (args.weight_l1 != 0)
+model = GraphCon(args.agg_mode,
+                 ResBackbone, args.arch, args.pretrained,
+                 AggNet, attention, graph, args.n_topk,
+                 m=args.ema,
+                 consistent=consistent)
 
 if args.cuda:
     model.cuda()
@@ -240,10 +247,11 @@ def train_multi_batch(epoch):
     L1_loss = 0.
     preds_list = []
     gt_list = []
+    adjusted_weight = adjust_weight(args.weight_mse, epoch, args)
     for batch_idx, (idx, data, label, batch) in enumerate(tqdm(train_loader)):
         bag_label = label
-        img_k = data[0]
-        img_q = data[1]
+        img_q = data[0]
+        img_k = data[1]
         idx = idx.squeeze(0)
         # print(idx)
         if args.cuda:
@@ -252,31 +260,30 @@ def train_multi_batch(epoch):
         # reset gradients
         optimizer.zero_grad()
         # calculate loss and metrics
-        preds, (graph1, graph2), (global_feat1, global_feat2), (self_feat1, self_feat2) = model(img_k, img_q, batch=batch) ##preds: [N] , gt： [N]
-
-        ce_loss = criterion_ce(preds, bag_label)
-        if graph1 is not None:
-            mse_loss = criterion_mse(graph1, graph2)/data[0].shape[0]
-        if global_feat1 is not None:
-            l1_loss = criterion_l1(global_feat1, global_feat2)
-        if args.weight_self != 0:
-            ins_loss, new_data_memory = Ins_Module(
-                idx, self_feat1, torch.arange(len(config.gpu_device)))
-            loss = ce_loss + args.weight_self * ins_loss + args.weight_mse * mse_loss +args.weight_l1* l1_loss
-        else:
-            loss = ce_loss + args.weight_mse * mse_loss + args.weight_l1 * l1_loss
-
-        # print info
+        Y_prob_q, self_feat_q, Attention_q, Affinity_q, (Ga_q, Gg_q, G_q) = model(img_q, batch=batch) ##preds: [N] , gt： [N]
+        if consistent:
+            _, _, Attention_k, Affinity_k, (Ga_k, Gg_k, G_k) = model.consistent_forward(img_k, batch=batch)
+        ce_loss = criterion_ce(Y_prob_q, bag_label)
         CE_loss += ce_loss.item()
+        loss = ce_loss
         if args.weight_mse != 0:
+            mse_loss = criterion_mse(Affinity_q, Affinity_k)/data[0].shape[0]
             MSE_loss += mse_loss.item()
+            loss += adjusted_weight * mse_loss
         if args.weight_l1 != 0:
-            L1_loss +=l1_loss.item()
+            #TODO; attention_feature/graph_feature/concat feature
+            l1_loss = criterion_l1(Gg_q, Gg_k)
+            loss += args.weight_l1 * l1_loss
         if args.weight_self != 0:
             INS_loss += ins_loss.item()
+            ins_loss, new_data_memory = Ins_Module(
+                idx, self_feat_q, torch.arange(len(config.gpu_device)))
+            loss += args.weight_self * ins_loss
+
+        # print info
         train_loss += loss.item()
 
-        preds_list.extend([torch.argmax(preds, dim=1)[i].item() for i in range(preds.shape[0])])
+        preds_list.extend([torch.argmax(Y_prob_q, dim=1)[i].item() for i in range(Y_prob_q.shape[0])])
         gt_list.extend([bag_label[i].item() for i in range(bag_label.shape[0])])
 
         # backward pass
@@ -315,7 +322,7 @@ def train_multi_batch(epoch):
     logger.log_string('====================Train')
     logger.log_string('Epoch: {}, ceLoss: {:.4f}, insLoss: {:.4f}, MseLoss: {:.4f}, L1Loss: {:.4f},Train loss: {:.4f}'
                       .format(epoch, CE_loss, INS_loss, MSE_loss, L1_loss, train_loss))
-    cal_metrics_train(preds_list, gt_list, args, logger, epoch)
+    cal_metrics(preds_list, gt_list, args, logger, epoch, 'train')
     # if epoch == args.epochs-1:
     #     torch.save({'state_dict': model1.state_dict()}, 'checkpoint_{:04d}.pth.tar'.format(epoch))
 
@@ -331,10 +338,8 @@ def test(epoch):
             img_k = data[0]
             img_q = data[1]
             if args.cuda:
-                img_k, img_q, bag_label = img_k.cuda(), img_q.cuda(), bag_label.cuda()
-
-            preds, _, _, _ = model(img_k, None, batch=batch)
-
+                img_k, img_q, bag_label, batch = img_k.cuda(), img_q.cuda(), bag_label.cuda(), batch.cuda()
+            preds, _, _, _, _= model(img_k, batch=batch)
             preds_list.extend([torch.argmax(preds, dim=1)[i].item() for i in range(preds.shape[0])])
             gt_list.extend([bag_label[i].item() for i in range(bag_label.shape[0])])
 
@@ -343,7 +348,7 @@ def test(epoch):
         logger.log_string('Test====================')
         logger.log_string(
             '\nEpoch: {}, Test Set, Loss: {:.4f}, Test error: {:.4f}'.format(epoch, test_loss, test_error))
-        cal_metrics(preds_list, gt_list, args, logger, epoch)
+        cal_metrics(preds_list, gt_list, args, logger, epoch, 'test')
 
 if __name__ == "__main__":
     logger.log_string('Start Training')
