@@ -1,0 +1,65 @@
+Start Training
+==========================================
+==========       CONFIG      =============
+==========================================
+epochs:200
+lr:0.0003
+reg:0
+bs:4
+seed:1
+cuda:True
+cos:True
+schedule:[120, 160]
+pretrained:False
+arch:resnet18
+attention:Agg_GAttention
+graph:GraphMILNet
+n_topk:4
+residual:False
+weight_self:0.8
+weight_mse:0
+weight_l1:0
+ratio:0.8
+folder:0
+data_dir:/remote-home/source/DATA
+log_dir:./experiments
+config:./config/imagenet_ir.json
+
+
+lr:0.0002999814948722491
+====================Train
+Epoch: 1, ceLoss: 1.4141, insLoss: 18.4053, Train loss: 16.1383
+              precision    recall  f1-score   support
+
+      normal       0.31      0.38      0.34        80
+         ITC       0.26      0.31      0.29        80
+       micro       0.40      0.35      0.37        80
+       macro       0.24      0.17      0.20        80
+
+    accuracy                           0.30       320
+   macro avg       0.30      0.30      0.30       320
+weighted avg       0.30      0.30      0.30       320
+
+[[30 24 12 14]
+ [22 25 19 14]
+ [19 17 28 16]
+ [26 29 11 14]]
+lr:0.0002999259840548597
+====================Train
+Epoch: 2, ceLoss: 1.3897, insLoss: 21.6420, Train loss: 18.7033
+              precision    recall  f1-score   support
+
+      normal       0.31      0.39      0.34        80
+         ITC       0.19      0.07      0.11        80
+       micro       0.31      0.49      0.38        80
+       macro       0.22      0.17      0.19        80
+
+    accuracy                           0.28       320
+   macro avg       0.26      0.28      0.26       320
+weighted avg       0.26      0.28      0.26       320
+
+[[31 10 26 13]
+ [28  6 32 14]
+ [12  6 39 23]
+ [29  9 28 14]]
+lr:0.0002998334812442955

@@ -1,0 +1,4388 @@
+Start Training
+==========================================
+==========       CONFIG      =============
+==========================================
+epochs:200
+lr:1e-05
+reg:0
+bs:4
+seed:1
+cuda:True
+cos:True
+schedule:[120, 160]
+pretrained:False
+arch:resnet18
+attention:Agg_GAttention
+graph:GraphMILNet
+n_topk:4
+residual:False
+weight_self:0.3
+weight_mse:0
+weight_l1:0
+ratio:0.8
+folder:4
+data_dir:/remote-home/source/DATA
+log_dir:./experiments
+config:./config/imagenet_ir.json
+
+
+lr:9.999383162408303e-06
+====================Train
+Epoch: 1, ceLoss: 1.4832, insLoss: 58.1798, Train loss: 18.9371
+              precision    recall  f1-score   support
+
+      normal       0.30      0.69      0.42        80
+         ITC       0.00      0.00      0.00        80
+       micro       0.32      0.56      0.41        80
+       macro       0.00      0.00      0.00        80
+
+    accuracy                           0.31       320
+   macro avg       0.16      0.31      0.21       320
+weighted avg       0.16      0.31      0.21       320
+
+[[55  0 25  0]
+ [41  0 39  0]
+ [35  0 45  0]
+ [50  0 30  0]]
+lr:9.997532801828659e-06
+====================Train
+Epoch: 2, ceLoss: 1.4218, insLoss: 39.6391, Train loss: 13.3135
+              precision    recall  f1-score   support
+
+      normal       0.30      0.36      0.33        80
+         ITC       0.00      0.00      0.00        80
+       micro       0.28      0.78      0.41        80
+       macro       1.00      0.01      0.02        80
+
+    accuracy                           0.29       320
+   macro avg       0.40      0.29      0.19       320
+weighted avg       0.40      0.29      0.19       320
+
+[[29  0 51  0]
+ [17  0 63  0]
+ [18  0 62  0]
+ [32  0 47  1]]
+lr:9.994449374809851e-06
+====================Train
+Epoch: 3, ceLoss: 1.3734, insLoss: 29.6612, Train loss: 10.2718
+              precision    recall  f1-score   support
+
+      normal       0.30      0.68      0.41        80
+         ITC       0.00      0.00      0.00        80
+       micro       0.36      0.62      0.46        80
+       macro       1.00      0.01      0.02        80
+
+    accuracy                           0.33       320
+   macro avg       0.42      0.33      0.22       320
+weighted avg       0.42      0.33      0.22       320
+
+[[54  0 26  0]
+ [44  0 36  0]
+ [30  0 50  0]
+ [53  0 26  1]]
+lr:9.990133642141359e-06
+====================Train
+Epoch: 4, ceLoss: 1.3872, insLoss: 26.3168, Train loss: 9.2823
+              precision    recall  f1-score   support
+
+      normal       0.32      0.36      0.34        80
+         ITC       0.00      0.00      0.00        80
+       micro       0.27      0.76      0.40        80
+       macro       0.00      0.00      0.00        80
+
+    accuracy                           0.28       320
+   macro avg       0.15      0.28      0.18       320
+weighted avg       0.15      0.28      0.18       320
+
+[[29  3 48  0]
+ [16  0 64  0]
+ [18  1 61  0]
+ [29  1 50  0]]
+lr:9.984586668665641e-06
+====================Train
+Epoch: 5, ceLoss: 1.3736, insLoss: 22.1486, Train loss: 8.0181
+              precision    recall  f1-score   support
+
+      normal       0.31      0.61      0.41        80
+         ITC       0.00      0.00      0.00        80
+       micro       0.34      0.69      0.46        80
+       macro       0.00      0.00      0.00        80
+
+    accuracy                           0.33       320
+   macro avg       0.16      0.33      0.22       320
+weighted avg       0.16      0.33      0.22       320
+
+[[49  0 31  0]
+ [39  0 41  0]
+ [25  0 55  0]
+ [47  0 33  0]]
+Start Testing
+Test====================
+
+Epoch: 5, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.34      1.00      0.51        20
+         ITC       0.00      0.00      0.00        20
+       micro       0.52      0.55      0.54        20
+       macro       0.00      0.00      0.00        20
+
+    accuracy                           0.39        80
+   macro avg       0.22      0.39      0.26        80
+weighted avg       0.22      0.39      0.26        80
+
+[[20  0  0  0]
+ [12  0  8  0]
+ [ 9  0 11  0]
+ [18  0  2  0]]
+lr:9.9778098230154e-06
+====================Train
+Epoch: 6, ceLoss: 1.3521, insLoss: 19.8318, Train loss: 7.3016
+              precision    recall  f1-score   support
+
+      normal       0.28      0.29      0.28        80
+         ITC       0.15      0.10      0.12        80
+       micro       0.34      0.78      0.47        80
+       macro       0.67      0.03      0.05        80
+
+    accuracy                           0.30       320
+   macro avg       0.36      0.30      0.23       320
+weighted avg       0.36      0.30      0.23       320
+
+[[23 16 40  1]
+ [22  8 50  0]
+ [14  4 62  0]
+ [23 24 31  2]]
+lr:9.9698047772759e-06
+====================Train
+Epoch: 7, ceLoss: 1.3468, insLoss: 18.2833, Train loss: 6.8318
+              precision    recall  f1-score   support
+
+      normal       0.25      0.41      0.31        80
+         ITC       0.00      0.00      0.00        80
+       micro       0.32      0.64      0.43        80
+       macro       0.54      0.16      0.25        80
+
+    accuracy                           0.30       320
+   macro avg       0.28      0.30      0.25       320
+weighted avg       0.28      0.30      0.25       320
+
+[[33  2 38  7]
+ [37  0 41  2]
+ [27  0 51  2]
+ [34  4 29 13]]
+lr:9.960573506572391e-06
+====================Train
+Epoch: 8, ceLoss: 1.3425, insLoss: 17.0154, Train loss: 6.4472
+              precision    recall  f1-score   support
+
+      normal       0.31      0.50      0.38        80
+         ITC       0.25      0.01      0.02        80
+       micro       0.34      0.66      0.45        80
+       macro       0.55      0.23      0.32        80
+
+    accuracy                           0.35       320
+   macro avg       0.36      0.35      0.29       320
+weighted avg       0.36      0.35      0.29       320
+
+[[40  1 31  8]
+ [33  1 40  6]
+ [26  0 53  1]
+ [30  2 30 18]]
+lr:9.95011828858279e-06
+====================Train
+Epoch: 9, ceLoss: 1.3339, insLoss: 15.5466, Train loss: 5.9979
+              precision    recall  f1-score   support
+
+      normal       0.32      0.50      0.39        80
+         ITC       0.46      0.07      0.13        80
+       micro       0.37      0.54      0.44        80
+       macro       0.48      0.39      0.43        80
+
+    accuracy                           0.38       320
+   macro avg       0.41      0.37      0.35       320
+weighted avg       0.41      0.38      0.35       320
+
+[[40  3 24 13]
+ [27  6 30 17]
+ [31  2 43  4]
+ [27  2 20 31]]
+lr:9.938441702975689e-06
+====================Train
+Epoch: 10, ceLoss: 1.3203, insLoss: 15.1323, Train loss: 5.8600
+              precision    recall  f1-score   support
+
+      normal       0.28      0.17      0.22        80
+         ITC       0.44      0.09      0.15        80
+       micro       0.32      0.61      0.42        80
+       macro       0.49      0.61      0.55        80
+
+    accuracy                           0.37       320
+   macro avg       0.38      0.37      0.33       320
+weighted avg       0.38      0.37      0.33       320
+
+[[14  3 43 20]
+ [15  7 42 16]
+ [16  1 49 14]
+ [ 5  5 21 49]]
+Start Testing
+Test====================
+
+Epoch: 10, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.50      0.15      0.23        20
+         ITC       0.00      0.00      0.00        20
+       micro       0.27      0.95      0.42        20
+       macro       0.00      0.00      0.00        20
+
+    accuracy                           0.28        80
+   macro avg       0.19      0.27      0.16        80
+weighted avg       0.19      0.28      0.16        80
+
+[[ 3  0 17  0]
+ [ 1  0 19  0]
+ [ 1  0 19  0]
+ [ 1  4 15  0]]
+lr:9.92554663077387e-06
+====================Train
+Epoch: 11, ceLoss: 1.3091, insLoss: 14.1622, Train loss: 5.5578
+              precision    recall  f1-score   support
+
+      normal       0.26      0.15      0.19        80
+         ITC       0.43      0.16      0.24        80
+       micro       0.40      0.57      0.47        80
+       macro       0.41      0.65      0.50        80
+
+    accuracy                           0.38       320
+   macro avg       0.37      0.38      0.35       320
+weighted avg       0.37      0.38      0.35       320
+
+[[12  4 30 34]
+ [14 13 24 29]
+ [15  6 46 13]
+ [ 5  7 16 52]]
+lr:9.911436253643445e-06
+====================Train
+Epoch: 12, ceLoss: 1.3043, insLoss: 13.9672, Train loss: 5.4944
+              precision    recall  f1-score   support
+
+      normal       0.39      0.23      0.29        80
+         ITC       0.53      0.34      0.41        80
+       micro       0.38      0.55      0.45        80
+       macro       0.43      0.57      0.49        80
+
+    accuracy                           0.42       320
+   macro avg       0.43      0.42      0.41       320
+weighted avg       0.43      0.42      0.41       320
+
+[[18  6 29 27]
+ [11 27 25 17]
+ [11  8 44 17]
+ [ 6 10 18 46]]
+lr:9.89611405310883e-06
+====================Train
+Epoch: 13, ceLoss: 1.2848, insLoss: 13.2850, Train loss: 5.2703
+              precision    recall  f1-score   support
+
+      normal       0.28      0.14      0.18        80
+         ITC       0.45      0.31      0.37        80
+       micro       0.38      0.50      0.43        80
+       macro       0.43      0.64      0.51        80
+
+    accuracy                           0.40       320
+   macro avg       0.38      0.40      0.37       320
+weighted avg       0.38      0.40      0.37       320
+
+[[11 12 28 29]
+ [10 25 23 22]
+ [15  8 40 17]
+ [ 4 10 15 51]]
+lr:9.879583809693737e-06
+====================Train
+Epoch: 14, ceLoss: 1.3096, insLoss: 12.8284, Train loss: 5.1582
+              precision    recall  f1-score   support
+
+      normal       0.30      0.26      0.28        80
+         ITC       0.50      0.21      0.30        80
+       micro       0.42      0.55      0.48        80
+       macro       0.42      0.59      0.49        80
+
+    accuracy                           0.40       320
+   macro avg       0.41      0.40      0.39       320
+weighted avg       0.41      0.40      0.39       320
+
+[[21  5 26 28]
+ [22 17 18 23]
+ [16  5 44 15]
+ [10  7 16 47]]
+lr:9.861849601988384e-06
+====================Train
+Epoch: 15, ceLoss: 1.2857, insLoss: 12.5699, Train loss: 5.0567
+              precision    recall  f1-score   support
+
+      normal       0.32      0.33      0.32        80
+         ITC       0.39      0.25      0.31        80
+       micro       0.42      0.56      0.48        80
+       macro       0.54      0.54      0.54        80
+
+    accuracy                           0.42       320
+   macro avg       0.42      0.42      0.41       320
+weighted avg       0.42      0.42      0.41       320
+
+[[26 10 26 18]
+ [19 20 27 14]
+ [22  8 45  5]
+ [14 13 10 43]]
+Start Testing
+Test====================
+
+Epoch: 15, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.62      0.50      0.56        20
+         ITC       0.50      0.35      0.41        20
+       micro       0.36      0.80      0.50        20
+       macro       0.17      0.05      0.08        20
+
+    accuracy                           0.42        80
+   macro avg       0.41      0.42      0.39        80
+weighted avg       0.41      0.42      0.39        80
+
+[[10  0  8  2]
+ [ 1  7 10  2]
+ [ 1  2 16  1]
+ [ 4  5 10  1]]
+lr:9.842915805643156e-06
+====================Train
+Epoch: 16, ceLoss: 1.2604, insLoss: 11.9616, Train loss: 4.8489
+              precision    recall  f1-score   support
+
+      normal       0.35      0.23      0.27        80
+         ITC       0.43      0.25      0.32        80
+       micro       0.52      0.62      0.56        80
+       macro       0.42      0.66      0.52        80
+
+    accuracy                           0.44       320
+   macro avg       0.43      0.44      0.42       320
+weighted avg       0.43      0.44      0.42       320
+
+[[18  9 20 33]
+ [16 20 20 24]
+ [10  5 50 15]
+ [ 8 12  7 53]]
+lr:9.822787092288991e-06
+====================Train
+Epoch: 17, ceLoss: 1.2454, insLoss: 11.4188, Train loss: 4.6710
+              precision    recall  f1-score   support
+
+      normal       0.39      0.46      0.43        80
+         ITC       0.47      0.34      0.39        80
+       micro       0.44      0.47      0.46        80
+       macro       0.49      0.51      0.50        80
+
+    accuracy                           0.45       320
+   macro avg       0.45      0.45      0.45       320
+weighted avg       0.45      0.45      0.45       320
+
+[[37  5 20 18]
+ [16 27 21 16]
+ [24 10 38  8]
+ [17 15  7 41]]
+lr:9.801468428384716e-06
+====================Train
+Epoch: 18, ceLoss: 1.2367, insLoss: 11.1287, Train loss: 4.5753
+              precision    recall  f1-score   support
+
+      normal       0.32      0.31      0.32        80
+         ITC       0.46      0.34      0.39        80
+       micro       0.47      0.59      0.53        80
+       macro       0.48      0.51      0.50        80
+
+    accuracy                           0.44       320
+   macro avg       0.43      0.44      0.43       320
+weighted avg       0.43      0.44      0.43       320
+
+[[25 12 21 22]
+ [13 27 23 17]
+ [18 10 47  5]
+ [21 10  8 41]]
+lr:9.778965073991652e-06
+====================Train
+Epoch: 19, ceLoss: 1.2030, insLoss: 10.7275, Train loss: 4.4212
+              precision    recall  f1-score   support
+
+      normal       0.39      0.30      0.34        80
+         ITC       0.49      0.39      0.43        80
+       micro       0.51      0.68      0.58        80
+       macro       0.49      0.55      0.52        80
+
+    accuracy                           0.48       320
+   macro avg       0.47      0.48      0.47       320
+weighted avg       0.47      0.48      0.47       320
+
+[[24  9 23 24]
+ [11 31 21 17]
+ [16  5 54  5]
+ [11 18  7 44]]
+lr:9.755282581475769e-06
+====================Train
+Epoch: 20, ceLoss: 1.2469, insLoss: 10.4753, Train loss: 4.3895
+              precision    recall  f1-score   support
+
+      normal       0.36      0.30      0.33        80
+         ITC       0.47      0.41      0.44        80
+       micro       0.48      0.54      0.51        80
+       macro       0.44      0.51      0.47        80
+
+    accuracy                           0.44       320
+   macro avg       0.44      0.44      0.44       320
+weighted avg       0.44      0.44      0.44       320
+
+[[24  9 22 25]
+ [17 33 13 17]
+ [18  9 43 10]
+ [ 8 19 12 41]]
+Start Testing
+Test====================
+
+Epoch: 20, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.56      0.45      0.50        20
+         ITC       0.44      0.35      0.39        20
+       micro       0.31      0.75      0.44        20
+       macro       0.00      0.00      0.00        20
+
+    accuracy                           0.39        80
+   macro avg       0.33      0.39      0.33        80
+weighted avg       0.33      0.39      0.33        80
+
+[[ 9  1 10  0]
+ [ 3  7 10  0]
+ [ 2  3 15  0]
+ [ 2  5 13  0]]
+lr:9.730426794137727e-06
+====================Train
+Epoch: 21, ceLoss: 1.2457, insLoss: 10.1292, Train loss: 4.2845
+              precision    recall  f1-score   support
+
+      normal       0.35      0.41      0.38        80
+         ITC       0.48      0.38      0.42        80
+       micro       0.47      0.53      0.49        80
+       macro       0.48      0.44      0.46        80
+
+    accuracy                           0.44       320
+   macro avg       0.44      0.44      0.44       320
+weighted avg       0.44      0.44      0.44       320
+
+[[33  7 23 17]
+ [24 30 11 15]
+ [22 10 42  6]
+ [15 16 14 35]]
+lr:9.704403844771128e-06
+====================Train
+Epoch: 22, ceLoss: 1.2132, insLoss: 9.8694, Train loss: 4.1740
+              precision    recall  f1-score   support
+
+      normal       0.33      0.25      0.29        80
+         ITC       0.40      0.35      0.37        80
+       micro       0.52      0.56      0.54        80
+       macro       0.46      0.59      0.51        80
+
+    accuracy                           0.44       320
+   macro avg       0.43      0.44      0.43       320
+weighted avg       0.43      0.44      0.43       320
+
+[[20 15 19 26]
+ [13 28 20 19]
+ [14 10 45 11]
+ [13 17  3 47]]
+lr:9.677220154149338e-06
+====================Train
+Epoch: 23, ceLoss: 1.2035, insLoss: 9.6457, Train loss: 4.0972
+              precision    recall  f1-score   support
+
+      normal       0.36      0.33      0.34        80
+         ITC       0.52      0.39      0.44        80
+       micro       0.45      0.62      0.53        80
+       macro       0.47      0.46      0.47        80
+
+    accuracy                           0.45       320
+   macro avg       0.45      0.45      0.44       320
+weighted avg       0.45      0.45      0.44       320
+
+[[26  4 32 18]
+ [12 31 20 17]
+ [15  9 50  6]
+ [19 16  8 37]]
+lr:9.648882429441258e-06
+====================Train
+Epoch: 24, ceLoss: 1.2062, insLoss: 9.4330, Train loss: 4.0361
+              precision    recall  f1-score   support
+
+      normal       0.38      0.38      0.38        80
+         ITC       0.48      0.40      0.44        80
+       micro       0.53      0.59      0.56        80
+       macro       0.48      0.51      0.50        80
+
+    accuracy                           0.47       320
+   macro avg       0.47      0.47      0.47       320
+weighted avg       0.47      0.47      0.47       320
+
+[[30 13 17 20]
+ [16 32 16 16]
+ [15 10 47  8]
+ [18 12  9 41]]
+lr:9.619397662556434e-06
+====================Train
+Epoch: 25, ceLoss: 1.1569, insLoss: 9.1916, Train loss: 3.9144
+              precision    recall  f1-score   support
+
+      normal       0.41      0.30      0.35        80
+         ITC       0.55      0.41      0.47        80
+       micro       0.44      0.61      0.51        80
+       macro       0.51      0.57      0.54        80
+
+    accuracy                           0.48       320
+   macro avg       0.48      0.47      0.47       320
+weighted avg       0.48      0.47      0.47       320
+
+[[24  6 29 21]
+ [ 6 33 25 16]
+ [15  9 49  7]
+ [13 12  9 46]]
+Start Testing
+Test====================
+
+Epoch: 25, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.48      0.50      0.49        20
+         ITC       0.43      0.50      0.47        20
+       micro       0.40      0.70      0.51        20
+       macro       0.00      0.00      0.00        20
+
+    accuracy                           0.42        80
+   macro avg       0.33      0.42      0.37        80
+weighted avg       0.33      0.42      0.37        80
+
+[[10  3  7  0]
+ [ 4 10  5  1]
+ [ 2  4 14  0]
+ [ 5  6  9  0]]
+lr:9.588773128419907e-06
+====================Train
+Epoch: 26, ceLoss: 1.1919, insLoss: 9.0875, Train loss: 3.9182
+              precision    recall  f1-score   support
+
+      normal       0.36      0.26      0.30        80
+         ITC       0.44      0.36      0.40        80
+       micro       0.45      0.60      0.52        80
+       macro       0.49      0.55      0.52        80
+
+    accuracy                           0.44       320
+   macro avg       0.44      0.44      0.43       320
+weighted avg       0.44      0.44      0.43       320
+
+[[21 12 30 17]
+ [12 29 20 19]
+ [13 10 48  9]
+ [13 15  8 44]]
+lr:9.557016383177226e-06
+====================Train
+Epoch: 27, ceLoss: 1.1777, insLoss: 8.7911, Train loss: 3.8150
+              precision    recall  f1-score   support
+
+      normal       0.44      0.41      0.43        80
+         ITC       0.49      0.46      0.48        80
+       micro       0.48      0.57      0.53        80
+       macro       0.56      0.53      0.54        80
+
+    accuracy                           0.49       320
+   macro avg       0.49      0.49      0.49       320
+weighted avg       0.49      0.49      0.49       320
+
+[[33 10 24 13]
+ [13 37 18 12]
+ [17  9 46  8]
+ [12 19  7 42]]
+lr:9.524135262330098e-06
+====================Train
+Epoch: 28, ceLoss: 1.1837, insLoss: 8.6373, Train loss: 3.7749
+              precision    recall  f1-score   support
+
+      normal       0.45      0.35      0.39        80
+         ITC       0.43      0.46      0.45        80
+       micro       0.49      0.56      0.53        80
+       macro       0.52      0.53      0.52        80
+
+    accuracy                           0.48       320
+   macro avg       0.47      0.47      0.47       320
+weighted avg       0.47      0.47      0.47       320
+
+[[28 12 22 18]
+ [10 37 17 16]
+ [14 16 45  5]
+ [10 21  7 42]]
+lr:9.490137878803078e-06
+====================Train
+Epoch: 29, ceLoss: 1.1393, insLoss: 8.4858, Train loss: 3.6850
+              precision    recall  f1-score   support
+
+      normal       0.46      0.40      0.43        80
+         ITC       0.44      0.40      0.42        80
+       micro       0.49      0.60      0.54        80
+       macro       0.48      0.49      0.48        80
+
+    accuracy                           0.47       320
+   macro avg       0.47      0.47      0.47       320
+weighted avg       0.47      0.47      0.47       320
+
+[[32 12 22 14]
+ [ 5 32 20 23]
+ [15 12 48  5]
+ [18 16  7 39]]
+lr:9.45503262094184e-06
+====================Train
+Epoch: 30, ceLoss: 1.1439, insLoss: 8.3190, Train loss: 3.6396
+              precision    recall  f1-score   support
+
+      normal       0.41      0.35      0.38        80
+         ITC       0.53      0.35      0.42        80
+       micro       0.45      0.56      0.50        80
+       macro       0.49      0.60      0.54        80
+
+    accuracy                           0.47       320
+   macro avg       0.47      0.47      0.46       320
+weighted avg       0.47      0.47      0.46       320
+
+[[28  5 27 20]
+ [ 8 28 22 22]
+ [16 11 45  8]
+ [16  9  7 48]]
+Start Testing
+Test====================
+
+Epoch: 30, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.37      0.65      0.47        20
+         ITC       0.44      0.35      0.39        20
+       micro       0.56      0.75      0.64        20
+       macro       0.00      0.00      0.00        20
+
+    accuracy                           0.44        80
+   macro avg       0.34      0.44      0.37        80
+weighted avg       0.34      0.44      0.37        80
+
+[[13  2  4  1]
+ [ 9  7  3  1]
+ [ 3  2 15  0]
+ [10  5  5  0]]
+lr:9.418828150443469e-06
+====================Train
+Epoch: 31, ceLoss: 1.1449, insLoss: 8.2305, Train loss: 3.6141
+              precision    recall  f1-score   support
+
+      normal       0.45      0.41      0.43        80
+         ITC       0.52      0.50      0.51        80
+       micro       0.49      0.56      0.53        80
+       macro       0.49      0.49      0.49        80
+
+    accuracy                           0.49       320
+   macro avg       0.49      0.49      0.49       320
+weighted avg       0.49      0.49      0.49       320
+
+[[33  8 21 18]
+ [ 9 40 17 14]
+ [14 13 45  8]
+ [17 16  8 39]]
+lr:9.381533400219319e-06
+====================Train
+Epoch: 32, ceLoss: 1.1400, insLoss: 8.0739, Train loss: 3.5621
+              precision    recall  f1-score   support
+
+      normal       0.44      0.35      0.39        80
+         ITC       0.46      0.41      0.43        80
+       micro       0.53      0.68      0.60        80
+       macro       0.48      0.50      0.49        80
+
+    accuracy                           0.48       320
+   macro avg       0.48      0.48      0.48       320
+weighted avg       0.48      0.48      0.48       320
+
+[[28 11 22 19]
+ [10 33 17 20]
+ [ 9 12 54  5]
+ [16 16  8 40]]
+lr:9.343157572190957e-06
+====================Train
+Epoch: 33, ceLoss: 1.1014, insLoss: 7.9904, Train loss: 3.4986
+              precision    recall  f1-score   support
+
+      normal       0.54      0.38      0.44        80
+         ITC       0.52      0.54      0.53        80
+       micro       0.51      0.65      0.57        80
+       macro       0.56      0.56      0.56        80
+
+    accuracy                           0.53       320
+   macro avg       0.53      0.53      0.53       320
+weighted avg       0.53      0.53      0.53       320
+
+[[30  8 27 15]
+ [ 7 43 17 13]
+ [ 8 13 52  7]
+ [11 18  6 45]]
+lr:9.30371013501972e-06
+====================Train
+Epoch: 34, ceLoss: 1.1578, insLoss: 7.9100, Train loss: 3.5308
+              precision    recall  f1-score   support
+
+      normal       0.40      0.42      0.41        80
+         ITC       0.47      0.44      0.45        80
+       micro       0.55      0.61      0.58        80
+       macro       0.46      0.41      0.43        80
+
+    accuracy                           0.47       320
+   macro avg       0.47      0.47      0.47       320
+weighted avg       0.47      0.47      0.47       320
+
+[[34 11 16 19]
+ [13 35 18 14]
+ [16  9 49  6]
+ [22 19  6 33]]
+lr:9.263200821770462e-06
+====================Train
+Epoch: 35, ceLoss: 1.1152, insLoss: 7.6989, Train loss: 3.4249
+              precision    recall  f1-score   support
+
+      normal       0.48      0.36      0.41        80
+         ITC       0.48      0.53      0.50        80
+       micro       0.49      0.60      0.54        80
+       macro       0.56      0.51      0.54        80
+
+    accuracy                           0.50       320
+   macro avg       0.50      0.50      0.50       320
+weighted avg       0.50      0.50      0.50       320
+
+[[29 11 28 12]
+ [ 8 42 18 12]
+ [10 14 48  8]
+ [14 21  4 41]]
+Start Testing
+Test====================
+
+Epoch: 35, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.35      0.60      0.44        20
+         ITC       0.29      0.20      0.24        20
+       micro       0.44      0.70      0.54        20
+       macro       0.00      0.00      0.00        20
+
+    accuracy                           0.38        80
+   macro avg       0.27      0.38      0.30        80
+weighted avg       0.27      0.38      0.30        80
+
+[[12  3  5  0]
+ [10  4  6  0]
+ [ 4  2 14  0]
+ [ 8  5  7  0]]
+lr:9.221639627510076e-06
+====================Train
+Epoch: 36, ceLoss: 1.1433, insLoss: 7.6977, Train loss: 3.4526
+              precision    recall  f1-score   support
+
+      normal       0.39      0.24      0.29        80
+         ITC       0.46      0.51      0.48        80
+       micro       0.53      0.65      0.58        80
+       macro       0.52      0.54      0.53        80
+
+    accuracy                           0.48       320
+   macro avg       0.47      0.48      0.47       320
+weighted avg       0.47      0.48      0.47       320
+
+[[19 18 22 21]
+ [ 9 41 18 12]
+ [ 9 12 52  7]
+ [12 19  6 43]]
+lr:9.179036806841352e-06
+====================Train
+Epoch: 37, ceLoss: 1.1111, insLoss: 7.6253, Train loss: 3.3987
+              precision    recall  f1-score   support
+
+      normal       0.41      0.39      0.40        80
+         ITC       0.49      0.45      0.47        80
+       micro       0.51      0.59      0.55        80
+       macro       0.53      0.51      0.52        80
+
+    accuracy                           0.48       320
+   macro avg       0.48      0.48      0.48       320
+weighted avg       0.48      0.48      0.48       320
+
+[[31  9 23 17]
+ [11 36 19 14]
+ [18  9 47  6]
+ [16 20  3 41]]
+lr:9.13540287137281e-06
+====================Train
+Epoch: 38, ceLoss: 1.1187, insLoss: 7.5247, Train loss: 3.3761
+              precision    recall  f1-score   support
+
+      normal       0.43      0.38      0.40        80
+         ITC       0.49      0.50      0.50        80
+       micro       0.43      0.50      0.46        80
+       macro       0.59      0.56      0.58        80
+
+    accuracy                           0.48       320
+   macro avg       0.49      0.48      0.48       320
+weighted avg       0.49      0.48      0.48       320
+
+[[30 10 29 11]
+ [ 6 40 21 13]
+ [16 17 40  7]
+ [17 14  4 45]]
+lr:9.090748587125118e-06
+====================Train
+Epoch: 39, ceLoss: 1.1689, insLoss: 7.4916, Train loss: 3.4164
+              precision    recall  f1-score   support
+
+      normal       0.39      0.34      0.36        80
+         ITC       0.50      0.57      0.53        80
+       micro       0.52      0.57      0.55        80
+       macro       0.43      0.38      0.40        80
+
+    accuracy                           0.47       320
+   macro avg       0.46      0.47      0.46       320
+weighted avg       0.46      0.47      0.46       320
+
+[[27 13 22 18]
+ [ 8 46 11 15]
+ [17 10 46  7]
+ [18 23  9 30]]
+lr:9.045084971874738e-06
+====================Train
+Epoch: 40, ceLoss: 1.0936, insLoss: 7.3933, Train loss: 3.3116
+              precision    recall  f1-score   support
+
+      normal       0.45      0.39      0.42        80
+         ITC       0.56      0.44      0.49        80
+       micro       0.57      0.71      0.63        80
+       macro       0.51      0.56      0.54        80
+
+    accuracy                           0.53       320
+   macro avg       0.52      0.53      0.52       320
+weighted avg       0.52      0.53      0.52       320
+
+[[31 11 22 16]
+ [ 9 35 13 23]
+ [13  6 57  4]
+ [16 11  8 45]]
+Start Testing
+Test====================
+
+Epoch: 40, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.29      0.25      0.27        20
+         ITC       0.29      0.30      0.29        20
+       micro       0.46      0.80      0.58        20
+       macro       0.14      0.05      0.07        20
+
+    accuracy                           0.35        80
+   macro avg       0.29      0.35      0.30        80
+weighted avg       0.29      0.35      0.30        80
+
+[[ 5  7  5  3]
+ [ 4  6  8  2]
+ [ 2  1 16  1]
+ [ 6  7  6  1]]
+lr:8.998423292435455e-06
+====================Train
+Epoch: 41, ceLoss: 1.0599, insLoss: 7.3378, Train loss: 3.2612
+              precision    recall  f1-score   support
+
+      normal       0.54      0.41      0.47        80
+         ITC       0.47      0.56      0.51        80
+       micro       0.64      0.71      0.67        80
+       macro       0.55      0.51      0.53        80
+
+    accuracy                           0.55       320
+   macro avg       0.55      0.55      0.55       320
+weighted avg       0.55      0.55      0.55       320
+
+[[33 15 15 17]
+ [ 8 45 14 13]
+ [ 7 13 57  3]
+ [13 23  3 41]]
+lr:8.950775061878451e-06
+====================Train
+Epoch: 42, ceLoss: 1.0668, insLoss: 7.2723, Train loss: 3.2485
+              precision    recall  f1-score   support
+
+      normal       0.51      0.40      0.45        80
+         ITC       0.49      0.53      0.51        80
+       micro       0.52      0.60      0.55        80
+       macro       0.54      0.54      0.54        80
+
+    accuracy                           0.52       320
+   macro avg       0.52      0.52      0.51       320
+weighted avg       0.52      0.52      0.51       320
+
+[[32  8 25 15]
+ [ 9 42 15 14]
+ [ 9 16 48  7]
+ [13 19  5 43]]
+lr:8.902152036691649e-06
+====================Train
+Epoch: 43, ceLoss: 1.0983, insLoss: 7.2755, Train loss: 3.2810
+              precision    recall  f1-score   support
+
+      normal       0.54      0.38      0.44        80
+         ITC       0.49      0.53      0.51        80
+       micro       0.58      0.61      0.60        80
+       macro       0.50      0.59      0.54        80
+
+    accuracy                           0.53       320
+   macro avg       0.53      0.53      0.52       320
+weighted avg       0.53      0.53      0.52       320
+
+[[30 16 15 19]
+ [ 3 42 16 19]
+ [10 12 49  9]
+ [13 16  4 47]]
+lr:8.852566213878947e-06
+====================Train
+Epoch: 44, ceLoss: 1.0948, insLoss: 7.1751, Train loss: 3.2473
+              precision    recall  f1-score   support
+
+      normal       0.47      0.35      0.40        80
+         ITC       0.50      0.55      0.52        80
+       micro       0.54      0.64      0.58        80
+       macro       0.57      0.55      0.56        80
+
+    accuracy                           0.52       320
+   macro avg       0.52      0.52      0.52       320
+weighted avg       0.52      0.52      0.52       320
+
+[[28 15 25 12]
+ [ 9 44 13 14]
+ [11 11 51  7]
+ [12 18  6 44]]
+lr:8.802029828000157e-06
+====================Train
+Epoch: 45, ceLoss: 1.1111, insLoss: 7.1614, Train loss: 3.2595
+              precision    recall  f1-score   support
+
+      normal       0.48      0.40      0.44        80
+         ITC       0.48      0.50      0.49        80
+       micro       0.56      0.65      0.60        80
+       macro       0.55      0.54      0.54        80
+
+    accuracy                           0.52       320
+   macro avg       0.52      0.52      0.52       320
+weighted avg       0.52      0.52      0.52       320
+
+[[32  9 20 19]
+ [11 40 19 10]
+ [ 9 13 52  6]
+ [14 21  2 43]]
+Start Testing
+Test====================
+
+Epoch: 45, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.33      0.60      0.43        20
+         ITC       0.00      0.00      0.00        20
+       micro       0.41      0.75      0.53        20
+       macro       0.00      0.00      0.00        20
+
+    accuracy                           0.34        80
+   macro avg       0.18      0.34      0.24        80
+weighted avg       0.18      0.34      0.24        80
+
+[[12  2  6  0]
+ [ 9  0 11  0]
+ [ 4  1 15  0]
+ [11  4  5  0]]
+lr:8.750555348152299e-06
+====================Train
+Epoch: 46, ceLoss: 1.1279, insLoss: 7.1007, Train loss: 3.2582
+              precision    recall  f1-score   support
+
+      normal       0.54      0.45      0.49        80
+         ITC       0.51      0.55      0.53        80
+       micro       0.57      0.62      0.60        80
+       macro       0.50      0.49      0.49        80
+
+    accuracy                           0.53       320
+   macro avg       0.53      0.53      0.53       320
+weighted avg       0.53      0.53      0.53       320
+
+[[36 12 17 15]
+ [ 6 44 14 16]
+ [12 10 50  8]
+ [13 21  7 39]]
+lr:8.698155474893048e-06
+====================Train
+Epoch: 47, ceLoss: 1.0853, insLoss: 7.0699, Train loss: 3.2063
+              precision    recall  f1-score   support
+
+      normal       0.48      0.46      0.47        80
+         ITC       0.54      0.47      0.50        80
+       micro       0.55      0.68      0.61        80
+       macro       0.54      0.50      0.52        80
+
+    accuracy                           0.53       320
+   macro avg       0.53      0.53      0.53       320
+weighted avg       0.53      0.53      0.53       320
+
+[[37  8 22 13]
+ [ 9 38 19 14]
+ [11  8 54  7]
+ [20 17  3 40]]
+lr:8.644843137107058e-06
+====================Train
+Epoch: 48, ceLoss: 1.0957, insLoss: 7.0013, Train loss: 3.1961
+              precision    recall  f1-score   support
+
+      normal       0.47      0.39      0.42        80
+         ITC       0.48      0.57      0.53        80
+       micro       0.55      0.59      0.57        80
+       macro       0.57      0.53      0.55        80
+
+    accuracy                           0.52       320
+   macro avg       0.52      0.52      0.52       320
+weighted avg       0.52      0.52      0.52       320
+
+[[31 12 22 15]
+ [ 8 46 14 12]
+ [14 14 47  5]
+ [13 23  2 42]]
+lr:8.590631488815945e-06
+====================Train
+Epoch: 49, ceLoss: 1.0566, insLoss: 7.0051, Train loss: 3.1581
+              precision    recall  f1-score   support
+
+      normal       0.51      0.35      0.41        80
+         ITC       0.53      0.60      0.56        80
+       micro       0.64      0.69      0.66        80
+       macro       0.54      0.60      0.57        80
+
+    accuracy                           0.56       320
+   macro avg       0.56      0.56      0.55       320
+weighted avg       0.56      0.56      0.55       320
+
+[[28 14 18 20]
+ [ 7 48 11 14]
+ [ 7 11 55  7]
+ [13 17  2 48]]
+lr:8.535533905932739e-06
+====================Train
+Epoch: 50, ceLoss: 1.0680, insLoss: 7.0054, Train loss: 3.1696
+              precision    recall  f1-score   support
+
+      normal       0.43      0.41      0.42        80
+         ITC       0.52      0.61      0.56        80
+       micro       0.56      0.54      0.55        80
+       macro       0.59      0.54      0.56        80
+
+    accuracy                           0.53       320
+   macro avg       0.53      0.53      0.52       320
+weighted avg       0.53      0.53      0.52       320
+
+[[33 12 19 16]
+ [ 8 49 13 10]
+ [19 14 43  4]
+ [16 19  2 43]]
+Start Testing
+Test====================
+
+Epoch: 50, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.28      0.45      0.35        20
+         ITC       0.18      0.20      0.19        20
+       micro       0.57      0.65      0.60        20
+       macro       0.00      0.00      0.00        20
+
+    accuracy                           0.33        80
+   macro avg       0.26      0.33      0.29        80
+weighted avg       0.26      0.33      0.29        80
+
+[[ 9  6  3  2]
+ [11  4  5  0]
+ [ 3  3 13  1]
+ [ 9  9  2  0]]
+lr:8.479563982961572e-06
+====================Train
+Epoch: 51, ceLoss: 1.0953, insLoss: 6.9252, Train loss: 3.1729
+              precision    recall  f1-score   support
+
+      normal       0.54      0.41      0.47        80
+         ITC       0.56      0.60      0.58        80
+       micro       0.58      0.65      0.61        80
+       macro       0.48      0.50      0.49        80
+
+    accuracy                           0.54       320
+   macro avg       0.54      0.54      0.54       320
+weighted avg       0.54      0.54      0.54       320
+
+[[33 10 21 16]
+ [ 5 48  8 19]
+ [ 9 10 52  9]
+ [14 17  9 40]]
+lr:8.422735529643445e-06
+====================Train
+Epoch: 52, ceLoss: 1.0965, insLoss: 6.9146, Train loss: 3.1708
+              precision    recall  f1-score   support
+
+      normal       0.54      0.34      0.42        80
+         ITC       0.52      0.60      0.55        80
+       micro       0.53      0.70      0.61        80
+       macro       0.60      0.54      0.57        80
+
+    accuracy                           0.54       320
+   macro avg       0.55      0.54      0.54       320
+weighted avg       0.55      0.54      0.54       320
+
+[[27 13 26 14]
+ [ 8 48 17  7]
+ [ 6 10 56  8]
+ [ 9 22  6 43]]
+lr:8.365062567548868e-06
+====================Train
+Epoch: 53, ceLoss: 1.0668, insLoss: 6.8727, Train loss: 3.1286
+              precision    recall  f1-score   support
+
+      normal       0.57      0.47      0.52        80
+         ITC       0.51      0.49      0.50        80
+       micro       0.51      0.62      0.56        80
+       macro       0.58      0.56      0.57        80
+
+    accuracy                           0.54       320
+   macro avg       0.54      0.54      0.54       320
+weighted avg       0.54      0.54      0.54       320
+
+[[38  8 19 15]
+ [ 7 39 23 11]
+ [ 9 14 50  7]
+ [13 16  6 45]]
+lr:8.30655932661826e-06
+====================Train
+Epoch: 54, ceLoss: 1.0634, insLoss: 6.8659, Train loss: 3.1232
+              precision    recall  f1-score   support
+
+      normal       0.56      0.40      0.47        80
+         ITC       0.54      0.59      0.56        80
+       micro       0.60      0.62      0.61        80
+       macro       0.51      0.59      0.55        80
+
+    accuracy                           0.55       320
+   macro avg       0.55      0.55      0.55       320
+weighted avg       0.55      0.55      0.55       320
+
+[[32 11 16 21]
+ [ 4 47 12 17]
+ [10 13 50  7]
+ [11 16  6 47]]
+lr:8.24724024165092e-06
+====================Train
+Epoch: 55, ceLoss: 0.9785, insLoss: 6.7985, Train loss: 3.0180
+              precision    recall  f1-score   support
+
+      normal       0.50      0.39      0.44        80
+         ITC       0.54      0.55      0.55        80
+       micro       0.60      0.70      0.65        80
+       macro       0.57      0.60      0.59        80
+
+    accuracy                           0.56       320
+   macro avg       0.55      0.56      0.55       320
+weighted avg       0.55      0.56      0.55       320
+
+[[31 11 23 15]
+ [ 7 44 14 15]
+ [10  8 56  6]
+ [14 18  0 48]]
+Start Testing
+Test====================
+
+Epoch: 55, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.28      0.45      0.35        20
+         ITC       0.00      0.00      0.00        20
+       micro       0.50      0.70      0.58        20
+       macro       0.00      0.00      0.00        20
+
+    accuracy                           0.29        80
+   macro avg       0.20      0.29      0.23        80
+weighted avg       0.20      0.29      0.23        80
+
+[[ 9  6  3  2]
+ [11  0  9  0]
+ [ 3  3 14  0]
+ [ 9  9  2  0]]
+lr:8.18711994874345e-06
+====================Train
+Epoch: 56, ceLoss: 1.0628, insLoss: 6.7764, Train loss: 3.0957
+              precision    recall  f1-score   support
+
+      normal       0.45      0.35      0.39        80
+         ITC       0.51      0.56      0.53        80
+       micro       0.49      0.55      0.52        80
+       macro       0.60      0.60      0.60        80
+
+    accuracy                           0.52       320
+   macro avg       0.51      0.52      0.51       320
+weighted avg       0.51      0.52      0.51       320
+
+[[28 13 26 13]
+ [ 8 45 12 15]
+ [15 17 44  4]
+ [11 14  7 48]]
+lr:8.126213281678527e-06
+====================Train
+Epoch: 57, ceLoss: 1.0637, insLoss: 6.7441, Train loss: 3.0869
+              precision    recall  f1-score   support
+
+      normal       0.48      0.41      0.44        80
+         ITC       0.53      0.53      0.53        80
+       micro       0.56      0.61      0.58        80
+       macro       0.53      0.55      0.54        80
+
+    accuracy                           0.53       320
+   macro avg       0.52      0.53      0.52       320
+weighted avg       0.52      0.53      0.52       320
+
+[[33 11 21 15]
+ [10 42 12 16]
+ [15  8 49  8]
+ [11 19  6 44]]
+lr:8.064535268264883e-06
+====================Train
+Epoch: 58, ceLoss: 1.0352, insLoss: 6.7440, Train loss: 3.0584
+              precision    recall  f1-score   support
+
+      normal       0.46      0.41      0.44        80
+         ITC       0.56      0.60      0.58        80
+       micro       0.55      0.66      0.60        80
+       macro       0.69      0.57      0.63        80
+
+    accuracy                           0.56       320
+   macro avg       0.57      0.56      0.56       320
+weighted avg       0.57      0.56      0.56       320
+
+[[33 11 25 11]
+ [10 48 15  7]
+ [13 11 53  3]
+ [15 15  4 46]]
+lr:8.002101126629422e-06
+====================Train
+Epoch: 59, ceLoss: 1.0478, insLoss: 6.7064, Train loss: 3.0597
+              precision    recall  f1-score   support
+
+      normal       0.55      0.46      0.50        80
+         ITC       0.54      0.54      0.54        80
+       micro       0.56      0.64      0.60        80
+       macro       0.60      0.61      0.60        80
+
+    accuracy                           0.56       320
+   macro avg       0.56      0.56      0.56       320
+weighted avg       0.56      0.56      0.56       320
+
+[[37 11 20 12]
+ [ 7 43 17 13]
+ [ 9 12 51  8]
+ [14 14  3 49]]
+lr:7.938926261462368e-06
+====================Train
+Epoch: 60, ceLoss: 1.0704, insLoss: 6.7120, Train loss: 3.0840
+              precision    recall  f1-score   support
+
+      normal       0.59      0.41      0.49        80
+         ITC       0.53      0.59      0.56        80
+       micro       0.57      0.61      0.59        80
+       macro       0.58      0.65      0.61        80
+
+    accuracy                           0.57       320
+   macro avg       0.57      0.57      0.56       320
+weighted avg       0.57      0.57      0.56       320
+
+[[33 13 21 13]
+ [ 4 47 13 16]
+ [ 7 15 49  9]
+ [12 13  3 52]]
+Start Testing
+Test====================
+
+Epoch: 60, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.31      0.20      0.24        20
+         ITC       0.00      0.00      0.00        20
+       micro       0.33      0.75      0.46        20
+       macro       0.00      0.00      0.00        20
+
+    accuracy                           0.24        80
+   macro avg       0.16      0.24      0.18        80
+weighted avg       0.16      0.24      0.18        80
+
+[[ 4  8  5  3]
+ [ 4  0 15  1]
+ [ 3  2 15  0]
+ [ 2  8 10  0]]
+lr:7.875026260216395e-06
+====================Train
+Epoch: 61, ceLoss: 1.0277, insLoss: 6.6513, Train loss: 3.0231
+              precision    recall  f1-score   support
+
+      normal       0.55      0.45      0.50        80
+         ITC       0.57      0.60      0.59        80
+       micro       0.57      0.66      0.61        80
+       macro       0.63      0.61      0.62        80
+
+    accuracy                           0.58       320
+   macro avg       0.58      0.58      0.58       320
+weighted avg       0.58      0.58      0.58       320
+
+[[36 11 20 13]
+ [ 6 48 14 12]
+ [13 10 53  4]
+ [10 15  6 49]]
+lr:7.810416889260654e-06
+====================Train
+Epoch: 62, ceLoss: 1.0542, insLoss: 6.5950, Train loss: 3.0327
+              precision    recall  f1-score   support
+
+      normal       0.48      0.40      0.44        80
+         ITC       0.48      0.56      0.52        80
+       micro       0.55      0.60      0.57        80
+       macro       0.58      0.53      0.55        80
+
+    accuracy                           0.52       320
+   macro avg       0.52      0.52      0.52       320
+weighted avg       0.52      0.52      0.52       320
+
+[[32 14 20 14]
+ [ 7 45 16 12]
+ [11 17 48  4]
+ [17 18  3 42]]
+lr:7.74511408999066e-06
+====================Train
+Epoch: 63, ceLoss: 1.0411, insLoss: 6.5934, Train loss: 3.0191
+              precision    recall  f1-score   support
+
+      normal       0.55      0.46      0.50        80
+         ITC       0.58      0.55      0.56        80
+       micro       0.56      0.60      0.58        80
+       macro       0.54      0.62      0.58        80
+
+    accuracy                           0.56       320
+   macro avg       0.56      0.56      0.56       320
+weighted avg       0.56      0.56      0.56       320
+
+[[37  7 19 17]
+ [ 5 44 14 17]
+ [11 13 48  8]
+ [14 12  4 50]]
+lr:7.679133974894984e-06
+====================Train
+Epoch: 64, ceLoss: 1.0391, insLoss: 6.5464, Train loss: 3.0030
+              precision    recall  f1-score   support
+
+      normal       0.44      0.31      0.36        80
+         ITC       0.53      0.49      0.51        80
+       micro       0.56      0.75      0.64        80
+       macro       0.58      0.60      0.59        80
+
+    accuracy                           0.54       320
+   macro avg       0.53      0.54      0.53       320
+weighted avg       0.53      0.54      0.53       320
+
+[[25 13 28 14]
+ [ 7 39 17 17]
+ [ 8  8 60  4]
+ [17 13  2 48]]
+lr:7.612492823579744e-06
+====================Train
+Epoch: 65, ceLoss: 1.0302, insLoss: 6.5400, Train loss: 2.9922
+              precision    recall  f1-score   support
+
+      normal       0.66      0.49      0.56        80
+         ITC       0.60      0.56      0.58        80
+       micro       0.61      0.70      0.65        80
+       macro       0.53      0.62      0.57        80
+
+    accuracy                           0.59       320
+   macro avg       0.60      0.59      0.59       320
+weighted avg       0.60      0.59      0.59       320
+
+[[39  8 18 15]
+ [ 2 45 14 19]
+ [ 8  6 56 10]
+ [10 16  4 50]]
+Start Testing
+Test====================
+
+Epoch: 65, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.17      0.10      0.12        20
+         ITC       0.07      0.05      0.06        20
+       micro       0.30      0.75      0.43        20
+       macro       0.33      0.05      0.09        20
+
+    accuracy                           0.24        80
+   macro avg       0.22      0.24      0.17        80
+weighted avg       0.22      0.24      0.17        80
+
+[[ 2  7 10  1]
+ [ 3  1 16  0]
+ [ 3  1 15  1]
+ [ 4  6  9  1]]
+lr:7.545207078751858e-06
+====================Train
+Epoch: 66, ceLoss: 1.0589, insLoss: 6.5282, Train loss: 3.0174
+              precision    recall  f1-score   support
+
+      normal       0.48      0.36      0.41        80
+         ITC       0.57      0.57      0.57        80
+       micro       0.59      0.69      0.63        80
+       macro       0.51      0.54      0.52        80
+
+    accuracy                           0.54       320
+   macro avg       0.54      0.54      0.53       320
+weighted avg       0.54      0.54      0.53       320
+
+[[29 11 22 18]
+ [ 5 46 10 19]
+ [11 10 55  4]
+ [16 14  7 43]]
+lr:7.477293342162038e-06
+====================Train
+Epoch: 67, ceLoss: 0.9878, insLoss: 6.4888, Train loss: 2.9344
+              precision    recall  f1-score   support
+
+      normal       0.51      0.42      0.46        80
+         ITC       0.55      0.55      0.55        80
+       micro       0.58      0.70      0.64        80
+       macro       0.56      0.54      0.55        80
+
+    accuracy                           0.55       320
+   macro avg       0.55      0.55      0.55       320
+weighted avg       0.55      0.55      0.55       320
+
+[[34 10 20 16]
+ [ 5 44 18 13]
+ [11  8 56  5]
+ [17 18  2 43]]
+lr:7.408768370508577e-06
+====================Train
+Epoch: 68, ceLoss: 1.0324, insLoss: 6.4672, Train loss: 2.9725
+              precision    recall  f1-score   support
+
+      normal       0.47      0.35      0.40        80
+         ITC       0.51      0.59      0.55        80
+       micro       0.59      0.60      0.60        80
+       macro       0.57      0.62      0.60        80
+
+    accuracy                           0.54       320
+   macro avg       0.54      0.54      0.54       320
+weighted avg       0.54      0.54      0.54       320
+
+[[28 12 20 20]
+ [ 9 47 12 12]
+ [10 16 48  6]
+ [12 17  1 50]]
+lr:7.3396490713028674e-06
+====================Train
+Epoch: 69, ceLoss: 1.0232, insLoss: 6.4371, Train loss: 2.9543
+              precision    recall  f1-score   support
+
+      normal       0.50      0.41      0.45        80
+         ITC       0.57      0.55      0.56        80
+       micro       0.59      0.69      0.64        80
+       macro       0.56      0.59      0.57        80
+
+    accuracy                           0.56       320
+   macro avg       0.56      0.56      0.56       320
+weighted avg       0.56      0.56      0.56       320
+
+[[33  9 21 17]
+ [ 9 44 11 16]
+ [11 10 55  4]
+ [13 14  6 47]]
+lr:7.269952498697734e-06
+====================Train
+Epoch: 70, ceLoss: 1.0195, insLoss: 6.4454, Train loss: 2.9531
+              precision    recall  f1-score   support
+
+      normal       0.52      0.42      0.47        80
+         ITC       0.59      0.57      0.58        80
+       micro       0.61      0.69      0.65        80
+       macro       0.62      0.66      0.64        80
+
+    accuracy                           0.59       320
+   macro avg       0.58      0.59      0.58       320
+weighted avg       0.58      0.59      0.58       320
+
+[[34  7 21 18]
+ [11 46 11 12]
+ [10 12 55  3]
+ [11 13  3 53]]
+Start Testing
+Test====================
+
+Epoch: 70, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.25      0.10      0.14        20
+         ITC       0.15      0.15      0.15        20
+       micro       0.34      0.75      0.47        20
+       macro       0.12      0.05      0.07        20
+
+    accuracy                           0.26        80
+   macro avg       0.22      0.26      0.21        80
+weighted avg       0.22      0.26      0.21        80
+
+[[ 2  7  7  4]
+ [ 2  3 13  2]
+ [ 3  1 15  1]
+ [ 1  9  9  1]]
+lr:7.1996958492795755e-06
+====================Train
+Epoch: 71, ceLoss: 1.0016, insLoss: 6.4211, Train loss: 2.9279
+              precision    recall  f1-score   support
+
+      normal       0.55      0.39      0.46        80
+         ITC       0.58      0.57      0.58        80
+       micro       0.58      0.70      0.63        80
+       macro       0.58      0.64      0.61        80
+
+    accuracy                           0.57       320
+   macro avg       0.57      0.57      0.57       320
+weighted avg       0.57      0.57      0.57       320
+
+[[31  7 24 18]
+ [ 5 46 15 14]
+ [ 6 13 56  5]
+ [14 13  2 51]]
+lr:7.128896457825364e-06
+====================Train
+Epoch: 72, ceLoss: 1.0434, insLoss: 6.3660, Train loss: 2.9532
+              precision    recall  f1-score   support
+
+      normal       0.47      0.38      0.42        80
+         ITC       0.47      0.50      0.48        80
+       micro       0.59      0.64      0.61        80
+       macro       0.52      0.55      0.54        80
+
+    accuracy                           0.52       320
+   macro avg       0.51      0.52      0.51       320
+weighted avg       0.51      0.52      0.51       320
+
+[[30 10 22 18]
+ [ 9 40 14 17]
+ [12 12 51  5]
+ [13 23  0 44]]
+lr:7.057571793025545e-06
+====================Train
+Epoch: 73, ceLoss: 0.9726, insLoss: 6.3197, Train loss: 2.8685
+              precision    recall  f1-score   support
+
+      normal       0.55      0.40      0.46        80
+         ITC       0.56      0.66      0.61        80
+       micro       0.63      0.74      0.68        80
+       macro       0.62      0.57      0.60        80
+
+    accuracy                           0.59       320
+   macro avg       0.59      0.59      0.59       320
+weighted avg       0.59      0.59      0.59       320
+
+[[32 15 17 16]
+ [ 5 53 15  7]
+ [ 8  8 59  5]
+ [13 18  3 46]]
+lr:6.985739453173903e-06
+====================Train
+Epoch: 74, ceLoss: 1.0355, insLoss: 6.3367, Train loss: 2.9365
+              precision    recall  f1-score   support
+
+      normal       0.46      0.40      0.43        80
+         ITC       0.51      0.49      0.50        80
+       micro       0.57      0.69      0.62        80
+       macro       0.55      0.53      0.54        80
+
+    accuracy                           0.53       320
+   macro avg       0.52      0.53      0.52       320
+weighted avg       0.52      0.53      0.52       320
+
+[[32 13 21 14]
+ [ 9 39 17 15]
+ [10 10 55  5]
+ [19 15  4 42]]
+lr:6.913417161825449e-06
+====================Train
+Epoch: 75, ceLoss: 1.0414, insLoss: 6.3214, Train loss: 2.9378
+              precision    recall  f1-score   support
+
+      normal       0.55      0.40      0.46        80
+         ITC       0.51      0.51      0.51        80
+       micro       0.60      0.66      0.63        80
+       macro       0.51      0.60      0.55        80
+
+    accuracy                           0.54       320
+   macro avg       0.54      0.54      0.54       320
+weighted avg       0.54      0.54      0.54       320
+
+[[32  9 19 20]
+ [ 4 41 13 22]
+ [11 12 53  4]
+ [11 18  3 48]]
+Start Testing
+Test====================
+
+Epoch: 75, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.15      0.10      0.12        20
+         ITC       0.00      0.00      0.00        20
+       micro       0.33      0.75      0.46        20
+       macro       0.00      0.00      0.00        20
+
+    accuracy                           0.21        80
+   macro avg       0.12      0.21      0.15        80
+weighted avg       0.12      0.21      0.15        80
+
+[[ 2  8  7  3]
+ [ 4  0 15  1]
+ [ 3  1 15  1]
+ [ 4  8  8  0]]
+lr:6.840622763423391e-06
+====================Train
+Epoch: 76, ceLoss: 1.0448, insLoss: 6.3025, Train loss: 2.9355
+              precision    recall  f1-score   support
+
+      normal       0.56      0.38      0.45        80
+         ITC       0.56      0.53      0.54        80
+       micro       0.53      0.65      0.58        80
+       macro       0.58      0.66      0.62        80
+
+    accuracy                           0.55       320
+   macro avg       0.55      0.55      0.55       320
+weighted avg       0.55      0.55      0.55       320
+
+[[30 11 26 13]
+ [ 6 42 14 18]
+ [ 8 12 52  8]
+ [10 10  7 53]]
+lr:6.767374218896286e-06
+====================Train
+Epoch: 77, ceLoss: 0.9685, insLoss: 6.2421, Train loss: 2.8411
+              precision    recall  f1-score   support
+
+      normal       0.56      0.44      0.49        80
+         ITC       0.57      0.66      0.61        80
+       micro       0.59      0.64      0.61        80
+       macro       0.62      0.61      0.62        80
+
+    accuracy                           0.59       320
+   macro avg       0.59      0.59      0.58       320
+weighted avg       0.59      0.59      0.58       320
+
+[[35 11 23 11]
+ [ 5 53  9 13]
+ [ 9 14 51  6]
+ [13 15  3 49]]
+lr:6.693689601226458e-06
+====================Train
+Epoch: 78, ceLoss: 1.0236, insLoss: 6.2153, Train loss: 2.8882
+              precision    recall  f1-score   support
+
+      normal       0.52      0.42      0.47        80
+         ITC       0.53      0.61      0.57        80
+       micro       0.58      0.61      0.60        80
+       macro       0.61      0.60      0.60        80
+
+    accuracy                           0.56       320
+   macro avg       0.56      0.56      0.56       320
+weighted avg       0.56      0.56      0.56       320
+
+[[34 12 20 14]
+ [ 8 49 14  9]
+ [10 13 49  8]
+ [13 18  1 48]]
+lr:6.619587090990748e-06
+====================Train
+Epoch: 79, ceLoss: 1.0179, insLoss: 6.2135, Train loss: 2.8820
+              precision    recall  f1-score   support
+
+      normal       0.52      0.35      0.42        80
+         ITC       0.56      0.56      0.56        80
+       micro       0.57      0.71      0.63        80
+       macro       0.56      0.60      0.58        80
+
+    accuracy                           0.56       320
+   macro avg       0.55      0.56      0.55       320
+weighted avg       0.55      0.56      0.55       320
+
+[[28  9 23 20]
+ [ 4 45 15 16]
+ [11 10 57  2]
+ [11 16  5 48]]
+lr:6.545084971874738e-06
+====================Train
+Epoch: 80, ceLoss: 1.0403, insLoss: 6.1862, Train loss: 2.8961
+              precision    recall  f1-score   support
+
+      normal       0.45      0.38      0.41        80
+         ITC       0.54      0.61      0.58        80
+       micro       0.61      0.64      0.62        80
+       macro       0.54      0.54      0.54        80
+
+    accuracy                           0.54       320
+   macro avg       0.54      0.54      0.54       320
+weighted avg       0.54      0.54      0.54       320
+
+[[30 14 21 15]
+ [ 8 49 10 13]
+ [ 8 12 51  9]
+ [20 15  2 43]]
+Start Testing
+Test====================
+
+Epoch: 80, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.20      0.10      0.13        20
+         ITC       0.05      0.05      0.05        20
+       micro       0.31      0.75      0.43        20
+       macro       0.50      0.05      0.09        20
+
+    accuracy                           0.24        80
+   macro avg       0.26      0.24      0.18        80
+weighted avg       0.26      0.24      0.18        80
+
+[[ 2  8  9  1]
+ [ 4  1 15  0]
+ [ 3  2 15  0]
+ [ 1  8 10  1]]
+lr:6.470201626161521e-06
+====================Train
+Epoch: 81, ceLoss: 0.9666, insLoss: 6.1674, Train loss: 2.8168
+              precision    recall  f1-score   support
+
+      normal       0.53      0.39      0.45        80
+         ITC       0.62      0.61      0.62        80
+       micro       0.54      0.64      0.58        80
+       macro       0.62      0.68      0.65        80
+
+    accuracy                           0.58       320
+   macro avg       0.58      0.58      0.57       320
+weighted avg       0.58      0.58      0.57       320
+
+[[31  9 27 13]
+ [ 4 49 16 11]
+ [12  8 51  9]
+ [12 13  1 54]]
+lr:6.3949555301961474e-06
+====================Train
+Epoch: 82, ceLoss: 1.0083, insLoss: 6.1394, Train loss: 2.8501
+              precision    recall  f1-score   support
+
+      normal       0.54      0.46      0.50        80
+         ITC       0.56      0.62      0.59        80
+       micro       0.56      0.62      0.59        80
+       macro       0.66      0.60      0.63        80
+
+    accuracy                           0.58       320
+   macro avg       0.58      0.58      0.58       320
+weighted avg       0.58      0.58      0.58       320
+
+[[37 11 21 11]
+ [ 9 50 12  9]
+ [10 15 50  5]
+ [12 14  6 48]]
+lr:6.319365249826864e-06
+====================Train
+Epoch: 83, ceLoss: 1.0261, insLoss: 6.1378, Train loss: 2.8674
+              precision    recall  f1-score   support
+
+      normal       0.61      0.38      0.47        80
+         ITC       0.57      0.55      0.56        80
+       micro       0.52      0.68      0.59        80
+       macro       0.54      0.61      0.57        80
+
+    accuracy                           0.55       320
+   macro avg       0.56      0.55      0.55       320
+weighted avg       0.56      0.55      0.55       320
+
+[[30  8 27 15]
+ [ 3 44 13 20]
+ [ 9 10 54  7]
+ [ 7 15  9 49]]
+lr:6.243449435824273e-06
+====================Train
+Epoch: 84, ceLoss: 0.9538, insLoss: 6.1149, Train loss: 2.7882
+              precision    recall  f1-score   support
+
+      normal       0.55      0.53      0.54        80
+         ITC       0.58      0.70      0.64        80
+       micro       0.66      0.62      0.64        80
+       macro       0.56      0.50      0.53        80
+
+    accuracy                           0.59       320
+   macro avg       0.59      0.59      0.59       320
+weighted avg       0.59      0.59      0.59       320
+
+[[42  9 14 15]
+ [ 5 56  9 10]
+ [11 13 50  6]
+ [19 18  3 40]]
+lr:6.1672268192795285e-06
+====================Train
+Epoch: 85, ceLoss: 0.9978, insLoss: 6.1065, Train loss: 2.8298
+              precision    recall  f1-score   support
+
+      normal       0.55      0.45      0.50        80
+         ITC       0.52      0.53      0.52        80
+       micro       0.59      0.68      0.63        80
+       macro       0.59      0.60      0.59        80
+
+    accuracy                           0.56       320
+   macro avg       0.56      0.56      0.56       320
+weighted avg       0.56      0.56      0.56       320
+
+[[36 10 22 12]
+ [ 7 42 14 17]
+ [ 8 13 54  5]
+ [14 16  2 48]]
+Start Testing
+Test====================
+
+Epoch: 85, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.30      0.45      0.36        20
+         ITC       0.00      0.00      0.00        20
+       micro       0.44      0.75      0.56        20
+       macro       0.25      0.05      0.08        20
+
+    accuracy                           0.31        80
+   macro avg       0.25      0.31      0.25        80
+weighted avg       0.25      0.31      0.25        80
+
+[[ 9  6  3  2]
+ [ 8  0 12  0]
+ [ 3  1 15  1]
+ [10  5  4  1]]
+lr:6.090716206982714e-06
+====================Train
+Epoch: 86, ceLoss: 1.0215, insLoss: 6.0592, Train loss: 2.8393
+              precision    recall  f1-score   support
+
+      normal       0.49      0.41      0.45        80
+         ITC       0.52      0.55      0.54        80
+       micro       0.59      0.64      0.61        80
+       macro       0.62      0.62      0.62        80
+
+    accuracy                           0.56       320
+   macro avg       0.55      0.56      0.55       320
+weighted avg       0.55      0.56      0.55       320
+
+[[33 11 19 17]
+ [12 44 15  9]
+ [14 10 51  5]
+ [ 9 19  2 50]]
+lr:6.0139364767825635e-06
+====================Train
+Epoch: 87, ceLoss: 0.9636, insLoss: 6.0462, Train loss: 2.7775
+              precision    recall  f1-score   support
+
+      normal       0.55      0.41      0.47        80
+         ITC       0.55      0.51      0.53        80
+       micro       0.61      0.71      0.66        80
+       macro       0.58      0.66      0.62        80
+
+    accuracy                           0.57       320
+   macro avg       0.57      0.57      0.57       320
+weighted avg       0.57      0.57      0.57       320
+
+[[33 10 20 17]
+ [ 5 41 16 18]
+ [ 8 12 57  3]
+ [14 12  1 53]]
+lr:5.936906572928625e-06
+====================Train
+Epoch: 88, ceLoss: 0.9865, insLoss: 6.0384, Train loss: 2.7980
+              precision    recall  f1-score   support
+
+      normal       0.57      0.49      0.53        80
+         ITC       0.54      0.64      0.59        80
+       micro       0.59      0.61      0.60        80
+       macro       0.63      0.59      0.61        80
+
+    accuracy                           0.58       320
+   macro avg       0.58      0.58      0.58       320
+weighted avg       0.58      0.58      0.58       320
+
+[[39 12 19 10]
+ [ 4 51 11 14]
+ [13 14 49  4]
+ [12 17  4 47]]
+lr:5.859645501397048e-06
+====================Train
+Epoch: 89, ceLoss: 0.9937, insLoss: 6.0237, Train loss: 2.8009
+              precision    recall  f1-score   support
+
+      normal       0.51      0.38      0.43        80
+         ITC       0.54      0.62      0.58        80
+       micro       0.59      0.62      0.61        80
+       macro       0.63      0.65      0.64        80
+
+    accuracy                           0.57       320
+   macro avg       0.57      0.57      0.56       320
+weighted avg       0.57      0.57      0.56       320
+
+[[30 16 19 15]
+ [ 7 50 13 10]
+ [12 12 50  6]
+ [10 15  3 52]]
+lr:5.782172325201155e-06
+====================Train
+Epoch: 90, ceLoss: 1.0124, insLoss: 6.0267, Train loss: 2.8204
+              precision    recall  f1-score   support
+
+      normal       0.58      0.53      0.55        80
+         ITC       0.53      0.51      0.52        80
+       micro       0.57      0.61      0.59        80
+       macro       0.60      0.62      0.61        80
+
+    accuracy                           0.57       320
+   macro avg       0.57      0.57      0.57       320
+weighted avg       0.57      0.57      0.57       320
+
+[[42  9 18 11]
+ [ 9 41 15 15]
+ [13 11 49  7]
+ [ 9 17  4 50]]
+Start Testing
+Test====================
+
+Epoch: 90, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.26      0.30      0.28        20
+         ITC       0.00      0.00      0.00        20
+       micro       0.38      0.75      0.51        20
+       macro       0.25      0.05      0.08        20
+
+    accuracy                           0.28        80
+   macro avg       0.22      0.28      0.22        80
+weighted avg       0.22      0.28      0.22        80
+
+[[ 6  7  5  2]
+ [ 7  0 13  0]
+ [ 3  1 15  1]
+ [ 7  6  6  1]]
+lr:5.704506159687915e-06
+====================Train
+Epoch: 91, ceLoss: 0.9762, insLoss: 5.9804, Train loss: 2.7703
+              precision    recall  f1-score   support
+
+      normal       0.56      0.42      0.48        80
+         ITC       0.63      0.68      0.65        80
+       micro       0.57      0.68      0.62        80
+       macro       0.65      0.64      0.64        80
+
+    accuracy                           0.60       320
+   macro avg       0.60      0.60      0.60       320
+weighted avg       0.60      0.60      0.60       320
+
+[[34  8 24 14]
+ [ 7 54 10  9]
+ [11 10 54  5]
+ [ 9 14  6 51]]
+lr:5.6266661678215225e-06
+====================Train
+Epoch: 92, ceLoss: 0.9369, insLoss: 6.0063, Train loss: 2.7388
+              precision    recall  f1-score   support
+
+      normal       0.66      0.54      0.59        80
+         ITC       0.57      0.64      0.60        80
+       micro       0.65      0.61      0.63        80
+       macro       0.63      0.71      0.67        80
+
+    accuracy                           0.62       320
+   macro avg       0.63      0.62      0.62       320
+weighted avg       0.63      0.62      0.62       320
+
+[[43  9 17 11]
+ [ 6 51  8 15]
+ [ 7 17 49  7]
+ [ 9 13  1 57]]
+lr:5.548671555455227e-06
+====================Train
+Epoch: 93, ceLoss: 1.0033, insLoss: 5.9357, Train loss: 2.7841
+              precision    recall  f1-score   support
+
+      normal       0.61      0.42      0.50        80
+         ITC       0.55      0.57      0.56        80
+       micro       0.59      0.70      0.64        80
+       macro       0.60      0.64      0.62        80
+
+    accuracy                           0.58       320
+   macro avg       0.59      0.58      0.58       320
+weighted avg       0.59      0.58      0.58       320
+
+[[34 12 17 17]
+ [ 4 46 16 14]
+ [10 11 56  3]
+ [ 8 15  6 51]]
+lr:5.470541566592572e-06
+====================Train
+Epoch: 94, ceLoss: 0.9645, insLoss: 5.9384, Train loss: 2.7461
+              precision    recall  f1-score   support
+
+      normal       0.60      0.47      0.53        80
+         ITC       0.60      0.64      0.62        80
+       micro       0.66      0.71      0.68        80
+       macro       0.61      0.65      0.63        80
+
+    accuracy                           0.62       320
+   macro avg       0.62      0.62      0.62       320
+weighted avg       0.62      0.62      0.62       320
+
+[[38 11 17 14]
+ [ 6 51 10 13]
+ [ 8  9 57  6]
+ [11 14  3 52]]
+lr:5.392295478639226e-06
+====================Train
+Epoch: 95, ceLoss: 0.9460, insLoss: 5.9083, Train loss: 2.7185
+              precision    recall  f1-score   support
+
+      normal       0.50      0.39      0.44        80
+         ITC       0.61      0.68      0.64        80
+       micro       0.57      0.65      0.60        80
+       macro       0.65      0.64      0.65        80
+
+    accuracy                           0.59       320
+   macro avg       0.58      0.59      0.58       320
+weighted avg       0.58      0.59      0.58       320
+
+[[31  9 26 14]
+ [ 7 54 11  8]
+ [11 12 52  5]
+ [13 13  3 51]]
+Start Testing
+Test====================
+
+Epoch: 95, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.18      0.20      0.19        20
+         ITC       0.00      0.00      0.00        20
+       micro       0.42      0.70      0.53        20
+       macro       0.17      0.05      0.08        20
+
+    accuracy                           0.24        80
+   macro avg       0.19      0.24      0.20        80
+weighted avg       0.19      0.24      0.20        80
+
+[[ 4  8  4  4]
+ [ 7  0 12  1]
+ [ 4  2 14  0]
+ [ 7  9  3  1]]
+lr:5.3139525976465675e-06
+====================Train
+Epoch: 96, ceLoss: 1.0117, insLoss: 5.9223, Train loss: 2.7884
+              precision    recall  f1-score   support
+
+      normal       0.51      0.39      0.44        80
+         ITC       0.49      0.55      0.52        80
+       micro       0.56      0.60      0.58        80
+       macro       0.56      0.60      0.58        80
+
+    accuracy                           0.53       320
+   macro avg       0.53      0.53      0.53       320
+weighted avg       0.53      0.53      0.53       320
+
+[[31 14 20 15]
+ [ 6 44 16 14]
+ [11 13 48  8]
+ [13 18  1 48]]
+lr:5.235532253548213e-06
+====================Train
+Epoch: 97, ceLoss: 0.9511, insLoss: 5.8785, Train loss: 2.7146
+              precision    recall  f1-score   support
+
+      normal       0.55      0.56      0.56        80
+         ITC       0.55      0.59      0.57        80
+       micro       0.63      0.68      0.65        80
+       macro       0.70      0.57      0.63        80
+
+    accuracy                           0.60       320
+   macro avg       0.61      0.60      0.60       320
+weighted avg       0.61      0.60      0.60       320
+
+[[45 12 14  9]
+ [ 9 47 15  9]
+ [13 11 54  2]
+ [15 16  3 46]]
+lr:5.157053795390642e-06
+====================Train
+Epoch: 98, ceLoss: 0.9821, insLoss: 5.8663, Train loss: 2.7420
+              precision    recall  f1-score   support
+
+      normal       0.60      0.44      0.51        80
+         ITC       0.55      0.62      0.58        80
+       micro       0.60      0.66      0.63        80
+       macro       0.57      0.59      0.58        80
+
+    accuracy                           0.58       320
+   macro avg       0.58      0.58      0.57       320
+weighted avg       0.58      0.58      0.57       320
+
+[[35  6 23 16]
+ [ 5 50 11 14]
+ [ 6 15 53  6]
+ [12 20  1 47]]
+lr:5.078536586559104e-06
+====================Train
+Epoch: 99, ceLoss: 1.0187, insLoss: 5.8523, Train loss: 2.7744
+              precision    recall  f1-score   support
+
+      normal       0.52      0.38      0.43        80
+         ITC       0.55      0.53      0.54        80
+       micro       0.53      0.65      0.58        80
+       macro       0.52      0.57      0.55        80
+
+    accuracy                           0.53       320
+   macro avg       0.53      0.53      0.53       320
+weighted avg       0.53      0.53      0.53       320
+
+[[30  8 24 18]
+ [ 3 42 15 20]
+ [14 10 52  4]
+ [11 16  7 46]]
+lr:5e-06
+====================Train
+Epoch: 100, ceLoss: 0.9882, insLoss: 5.8305, Train loss: 2.7373
+              precision    recall  f1-score   support
+
+      normal       0.56      0.45      0.50        80
+         ITC       0.53      0.61      0.57        80
+       micro       0.62      0.62      0.62        80
+       macro       0.68      0.70      0.69        80
+
+    accuracy                           0.60       320
+   macro avg       0.60      0.60      0.59       320
+weighted avg       0.60      0.60      0.59       320
+
+[[36 17 18  9]
+ [ 6 49 11 14]
+ [13 14 50  3]
+ [ 9 13  2 56]]
+Start Testing
+Test====================
+
+Epoch: 100, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.20      0.25      0.22        20
+         ITC       0.00      0.00      0.00        20
+       micro       0.42      0.75      0.54        20
+       macro       0.40      0.10      0.16        20
+
+    accuracy                           0.28        80
+   macro avg       0.25      0.28      0.23        80
+weighted avg       0.25      0.28      0.23        80
+
+[[ 5  7  6  2]
+ [ 8  0 12  0]
+ [ 3  1 15  1]
+ [ 9  6  3  2]]
+lr:4.921463413440898e-06
+====================Train
+Epoch: 101, ceLoss: 0.9588, insLoss: 5.8023, Train loss: 2.6995
+              precision    recall  f1-score   support
+
+      normal       0.66      0.50      0.57        80
+         ITC       0.47      0.55      0.51        80
+       micro       0.65      0.71      0.68        80
+       macro       0.56      0.54      0.55        80
+
+    accuracy                           0.57       320
+   macro avg       0.58      0.58      0.57       320
+weighted avg       0.58      0.57      0.57       320
+
+[[40  9 17 14]
+ [ 7 44 13 16]
+ [ 4 15 57  4]
+ [10 26  1 43]]
+lr:4.842946204609359e-06
+====================Train
+Epoch: 102, ceLoss: 0.9789, insLoss: 5.7941, Train loss: 2.7171
+              precision    recall  f1-score   support
+
+      normal       0.58      0.41      0.48        80
+         ITC       0.51      0.65      0.57        80
+       micro       0.59      0.68      0.63        80
+       macro       0.61      0.54      0.57        80
+
+    accuracy                           0.57       320
+   macro avg       0.57      0.57      0.56       320
+weighted avg       0.57      0.57      0.56       320
+
+[[33 13 19 15]
+ [ 5 52 13 10]
+ [ 9 15 54  2]
+ [10 22  5 43]]
+lr:4.7644677464517874e-06
+====================Train
+Epoch: 103, ceLoss: 0.9902, insLoss: 5.8206, Train loss: 2.7364
+              precision    recall  f1-score   support
+
+      normal       0.50      0.44      0.47        80
+         ITC       0.54      0.57      0.56        80
+       micro       0.59      0.61      0.60        80
+       macro       0.57      0.59      0.58        80
+
+    accuracy                           0.55       320
+   macro avg       0.55      0.55      0.55       320
+weighted avg       0.55      0.55      0.55       320
+
+[[35 12 20 13]
+ [ 4 46 12 18]
+ [15 12 49  4]
+ [16 15  2 47]]
+lr:4.686047402353433e-06
+====================Train
+Epoch: 104, ceLoss: 0.9517, insLoss: 5.7581, Train loss: 2.6791
+              precision    recall  f1-score   support
+
+      normal       0.56      0.42      0.48        80
+         ITC       0.52      0.57      0.55        80
+       micro       0.65      0.71      0.68        80
+       macro       0.65      0.68      0.66        80
+
+    accuracy                           0.60       320
+   macro avg       0.59      0.60      0.59       320
+weighted avg       0.59      0.60      0.59       320
+
+[[34 15 15 16]
+ [10 46 13 11]
+ [ 8 13 57  2]
+ [ 9 14  3 54]]
+lr:4.6077045213607765e-06
+====================Train
+Epoch: 105, ceLoss: 0.9766, insLoss: 5.7489, Train loss: 2.7013
+              precision    recall  f1-score   support
+
+      normal       0.53      0.45      0.49        80
+         ITC       0.58      0.59      0.58        80
+       micro       0.62      0.68      0.65        80
+       macro       0.57      0.60      0.59        80
+
+    accuracy                           0.58       320
+   macro avg       0.58      0.58      0.58       320
+weighted avg       0.58      0.58      0.58       320
+
+[[36  6 22 16]
+ [10 47 10 13]
+ [ 8 11 54  7]
+ [14 17  1 48]]
+Start Testing
+Test====================
+
+Epoch: 105, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.28      0.40      0.33        20
+         ITC       0.00      0.00      0.00        20
+       micro       0.43      0.75      0.55        20
+       macro       0.33      0.05      0.09        20
+
+    accuracy                           0.30        80
+   macro avg       0.26      0.30      0.24        80
+weighted avg       0.26      0.30      0.24        80
+
+[[ 8  6  4  2]
+ [ 8  0 12  0]
+ [ 3  2 15  0]
+ [10  5  4  1]]
+lr:4.529458433407429e-06
+====================Train
+Epoch: 106, ceLoss: 0.9568, insLoss: 5.7566, Train loss: 2.6838
+              precision    recall  f1-score   support
+
+      normal       0.65      0.49      0.56        80
+         ITC       0.56      0.59      0.57        80
+       micro       0.60      0.62      0.61        80
+       macro       0.59      0.68      0.63        80
+
+    accuracy                           0.59       320
+   macro avg       0.60      0.59      0.59       320
+weighted avg       0.60      0.59      0.59       320
+
+[[39 12 16 13]
+ [ 3 47 12 18]
+ [ 9 14 50  7]
+ [ 9 11  6 54]]
+lr:4.451328444544774e-06
+====================Train
+Epoch: 107, ceLoss: 1.0008, insLoss: 5.7877, Train loss: 2.7371
+              precision    recall  f1-score   support
+
+      normal       0.55      0.39      0.46        80
+         ITC       0.54      0.65      0.59        80
+       micro       0.55      0.68      0.61        80
+       macro       0.59      0.51      0.55        80
+
+    accuracy                           0.56       320
+   macro avg       0.56      0.56      0.55       320
+weighted avg       0.56      0.56      0.55       320
+
+[[31 13 24 12]
+ [ 4 52 13 11]
+ [10 11 54  5]
+ [11 21  7 41]]
+lr:4.37333383217848e-06
+====================Train
+Epoch: 108, ceLoss: 0.9813, insLoss: 5.7589, Train loss: 2.7089
+              precision    recall  f1-score   support
+
+      normal       0.55      0.44      0.49        80
+         ITC       0.54      0.56      0.55        80
+       micro       0.62      0.71      0.66        80
+       macro       0.56      0.56      0.56        80
+
+    accuracy                           0.57       320
+   macro avg       0.57      0.57      0.57       320
+weighted avg       0.57      0.57      0.57       320
+
+[[35 13 21 11]
+ [ 5 45 10 20]
+ [ 9 10 57  4]
+ [15 16  4 45]]
+lr:4.295493840312088e-06
+====================Train
+Epoch: 109, ceLoss: 0.9621, insLoss: 5.7469, Train loss: 2.6862
+              precision    recall  f1-score   support
+
+      normal       0.58      0.46      0.51        80
+         ITC       0.55      0.60      0.57        80
+       micro       0.62      0.66      0.64        80
+       macro       0.63      0.65      0.64        80
+
+    accuracy                           0.59       320
+   macro avg       0.59      0.59      0.59       320
+weighted avg       0.59      0.59      0.59       320
+
+[[37 16 17 10]
+ [ 6 48 12 14]
+ [10 10 53  7]
+ [11 14  3 52]]
+lr:4.217827674798846e-06
+====================Train
+Epoch: 110, ceLoss: 0.9638, insLoss: 5.7173, Train loss: 2.6790
+              precision    recall  f1-score   support
+
+      normal       0.52      0.45      0.48        80
+         ITC       0.56      0.61      0.59        80
+       micro       0.61      0.64      0.62        80
+       macro       0.62      0.62      0.62        80
+
+    accuracy                           0.58       320
+   macro avg       0.58      0.58      0.58       320
+weighted avg       0.58      0.58      0.58       320
+
+[[36 10 18 16]
+ [ 7 49 13 11]
+ [11 15 51  3]
+ [15 13  2 50]]
+Start Testing
+Test====================
+
+Epoch: 110, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.25      0.35      0.29        20
+         ITC       0.07      0.05      0.06        20
+       micro       0.45      0.75      0.57        20
+       macro       0.50      0.10      0.17        20
+
+    accuracy                           0.31        80
+   macro avg       0.32      0.31      0.27        80
+weighted avg       0.32      0.31      0.27        80
+
+[[ 7  7  4  2]
+ [ 7  1 12  0]
+ [ 3  2 15  0]
+ [11  5  2  2]]
+lr:4.140354498602952e-06
+====================Train
+Epoch: 111, ceLoss: 0.9880, insLoss: 5.6950, Train loss: 2.6965
+              precision    recall  f1-score   support
+
+      normal       0.57      0.42      0.49        80
+         ITC       0.56      0.65      0.60        80
+       micro       0.63      0.65      0.64        80
+       macro       0.56      0.59      0.57        80
+
+    accuracy                           0.58       320
+   macro avg       0.58      0.58      0.57       320
+weighted avg       0.58      0.58      0.57       320
+
+[[34 10 17 19]
+ [ 5 52 12 11]
+ [ 7 14 52  7]
+ [14 17  2 47]]
+lr:4.063093427071377e-06
+====================Train
+Epoch: 112, ceLoss: 0.9401, insLoss: 5.6740, Train loss: 2.6423
+              precision    recall  f1-score   support
+
+      normal       0.60      0.47      0.53        80
+         ITC       0.55      0.60      0.57        80
+       micro       0.61      0.68      0.64        80
+       macro       0.62      0.64      0.63        80
+
+    accuracy                           0.60       320
+   macro avg       0.60      0.60      0.59       320
+weighted avg       0.60      0.60      0.59       320
+
+[[38  9 20 13]
+ [ 7 48 13 12]
+ [ 9 11 54  6]
+ [ 9 19  1 51]]
+lr:3.986063523217438e-06
+====================Train
+Epoch: 113, ceLoss: 0.9986, insLoss: 5.7191, Train loss: 2.7144
+              precision    recall  f1-score   support
+
+      normal       0.67      0.47      0.55        80
+         ITC       0.55      0.65      0.59        80
+       micro       0.58      0.64      0.61        80
+       macro       0.62      0.62      0.62        80
+
+    accuracy                           0.60       320
+   macro avg       0.60      0.60      0.60       320
+weighted avg       0.60      0.60      0.60       320
+
+[[38 10 20 12]
+ [ 4 52 12 12]
+ [ 6 17 51  6]
+ [ 9 16  5 50]]
+lr:3.909283793017289e-06
+====================Train
+Epoch: 114, ceLoss: 0.9772, insLoss: 5.6498, Train loss: 2.6721
+              precision    recall  f1-score   support
+
+      normal       0.54      0.45      0.49        80
+         ITC       0.55      0.59      0.57        80
+       micro       0.65      0.62      0.64        80
+       macro       0.56      0.64      0.60        80
+
+    accuracy                           0.57       320
+   macro avg       0.58      0.57      0.57       320
+weighted avg       0.58      0.57      0.57       320
+
+[[36 12 15 17]
+ [ 6 47  9 18]
+ [12 13 50  5]
+ [13 13  3 51]]
+lr:3.832773180720472e-06
+====================Train
+Epoch: 115, ceLoss: 0.9657, insLoss: 5.6828, Train loss: 2.6705
+              precision    recall  f1-score   support
+
+      normal       0.60      0.39      0.47        80
+         ITC       0.60      0.65      0.62        80
+       micro       0.57      0.75      0.65        80
+       macro       0.63      0.60      0.62        80
+
+    accuracy                           0.60       320
+   macro avg       0.60      0.60      0.59       320
+weighted avg       0.60      0.60      0.59       320
+
+[[31  9 23 17]
+ [ 6 52 17  5]
+ [ 3 11 60  6]
+ [12 15  5 48]]
+Start Testing
+Test====================
+
+Epoch: 115, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.25      0.35      0.29        20
+         ITC       0.00      0.00      0.00        20
+       micro       0.42      0.80      0.55        20
+       macro       0.40      0.10      0.16        20
+
+    accuracy                           0.31        80
+   macro avg       0.27      0.31      0.25        80
+weighted avg       0.27      0.31      0.25        80
+
+[[ 7  5  6  2]
+ [ 8  0 12  0]
+ [ 2  1 16  1]
+ [11  3  4  2]]
+lr:3.756550564175726e-06
+====================Train
+Epoch: 116, ceLoss: 0.9328, insLoss: 5.6652, Train loss: 2.6323
+              precision    recall  f1-score   support
+
+      normal       0.59      0.47      0.53        80
+         ITC       0.60      0.65      0.62        80
+       micro       0.70      0.68      0.69        80
+       macro       0.61      0.70      0.65        80
+
+    accuracy                           0.62       320
+   macro avg       0.63      0.62      0.62       320
+weighted avg       0.63      0.62      0.62       320
+
+[[38 15 13 14]
+ [ 4 52  9 15]
+ [ 9 10 54  7]
+ [13 10  1 56]]
+lr:3.680634750173136e-06
+====================Train
+Epoch: 117, ceLoss: 0.9683, insLoss: 5.6443, Train loss: 2.6616
+              precision    recall  f1-score   support
+
+      normal       0.57      0.44      0.50        80
+         ITC       0.57      0.56      0.57        80
+       micro       0.59      0.68      0.63        80
+       macro       0.66      0.72      0.69        80
+
+    accuracy                           0.60       320
+   macro avg       0.60      0.60      0.60       320
+weighted avg       0.60      0.60      0.60       320
+
+[[35 14 20 11]
+ [ 4 45 15 16]
+ [11 12 54  3]
+ [11  8  3 58]]
+lr:3.6050444698038547e-06
+====================Train
+Epoch: 118, ceLoss: 0.9237, insLoss: 5.6482, Train loss: 2.6181
+              precision    recall  f1-score   support
+
+      normal       0.59      0.49      0.53        80
+         ITC       0.60      0.70      0.64        80
+       micro       0.68      0.68      0.68        80
+       macro       0.70      0.70      0.70        80
+
+    accuracy                           0.64       320
+   macro avg       0.64      0.64      0.64       320
+weighted avg       0.64      0.64      0.64       320
+
+[[39 14 17 10]
+ [ 5 56  8 11]
+ [11 12 54  3]
+ [11 12  1 56]]
+lr:3.5297983738384813e-06
+====================Train
+Epoch: 119, ceLoss: 0.9565, insLoss: 5.6492, Train loss: 2.6513
+              precision    recall  f1-score   support
+
+      normal       0.54      0.47      0.50        80
+         ITC       0.59      0.65      0.62        80
+       micro       0.60      0.61      0.60        80
+       macro       0.61      0.60      0.60        80
+
+    accuracy                           0.58       320
+   macro avg       0.58      0.58      0.58       320
+weighted avg       0.58      0.58      0.58       320
+
+[[38  8 20 14]
+ [ 6 52  9 13]
+ [15 12 49  4]
+ [12 16  4 48]]
+lr:3.4549150281252648e-06
+====================Train
+Epoch: 120, ceLoss: 0.9501, insLoss: 5.6126, Train loss: 2.6339
+              precision    recall  f1-score   support
+
+      normal       0.51      0.47      0.49        80
+         ITC       0.61      0.61      0.61        80
+       micro       0.65      0.60      0.62        80
+       macro       0.61      0.70      0.65        80
+
+    accuracy                           0.60       320
+   macro avg       0.60      0.60      0.60       320
+weighted avg       0.60      0.60      0.60       320
+
+[[38  9 14 19]
+ [ 6 49 11 14]
+ [17 12 48  3]
+ [13 10  1 56]]
+Start Testing
+Test====================
+
+Epoch: 120, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.33      0.40      0.36        20
+         ITC       0.00      0.00      0.00        20
+       micro       0.39      0.80      0.52        20
+       macro       0.50      0.15      0.23        20
+
+    accuracy                           0.34        80
+   macro avg       0.31      0.34      0.28        80
+weighted avg       0.31      0.34      0.28        80
+
+[[ 8  4  6  2]
+ [ 6  0 13  1]
+ [ 2  2 16  0]
+ [ 8  3  6  3]]
+lr:3.380412909009253e-06
+====================Train
+Epoch: 121, ceLoss: 0.9711, insLoss: 5.6076, Train loss: 2.6534
+              precision    recall  f1-score   support
+
+      normal       0.56      0.35      0.43        80
+         ITC       0.54      0.64      0.58        80
+       micro       0.59      0.69      0.63        80
+       macro       0.58      0.59      0.58        80
+
+    accuracy                           0.57       320
+   macro avg       0.57      0.57      0.56       320
+weighted avg       0.57      0.57      0.56       320
+
+[[28  9 24 19]
+ [ 5 51 13 11]
+ [ 6 15 55  4]
+ [11 20  2 47]]
+lr:3.3063103987735433e-06
+====================Train
+Epoch: 122, ceLoss: 0.9694, insLoss: 5.6029, Train loss: 2.6503
+              precision    recall  f1-score   support
+
+      normal       0.56      0.50      0.53        80
+         ITC       0.52      0.64      0.57        80
+       micro       0.55      0.56      0.56        80
+       macro       0.63      0.54      0.58        80
+
+    accuracy                           0.56       320
+   macro avg       0.56      0.56      0.56       320
+weighted avg       0.56      0.56      0.56       320
+
+[[40 10 20 10]
+ [ 9 51 11  9]
+ [10 19 45  6]
+ [13 18  6 43]]
+lr:3.2326257811037154e-06
+====================Train
+Epoch: 123, ceLoss: 0.9081, insLoss: 5.6022, Train loss: 2.5888
+              precision    recall  f1-score   support
+
+      normal       0.57      0.42      0.49        80
+         ITC       0.64      0.64      0.64        80
+       micro       0.63      0.71      0.67        80
+       macro       0.69      0.76      0.72        80
+
+    accuracy                           0.63       320
+   macro avg       0.63      0.63      0.63       320
+weighted avg       0.63      0.63      0.63       320
+
+[[34 10 20 16]
+ [ 7 51 12 10]
+ [11 10 57  2]
+ [ 8  9  2 61]]
+lr:3.159377236576612e-06
+====================Train
+Epoch: 124, ceLoss: 0.9388, insLoss: 5.6181, Train loss: 2.6242
+              precision    recall  f1-score   support
+
+      normal       0.61      0.47      0.54        80
+         ITC       0.62      0.62      0.62        80
+       micro       0.63      0.70      0.66        80
+       macro       0.60      0.66      0.63        80
+
+    accuracy                           0.62       320
+   macro avg       0.62      0.62      0.61       320
+weighted avg       0.62      0.62      0.61       320
+
+[[38  8 21 13]
+ [ 5 50  9 16]
+ [ 6 11 56  7]
+ [13 11  3 53]]
+lr:3.0865828381745528e-06
+====================Train
+Epoch: 125, ceLoss: 0.9238, insLoss: 5.5607, Train loss: 2.5920
+              precision    recall  f1-score   support
+
+      normal       0.51      0.46      0.48        80
+         ITC       0.59      0.64      0.61        80
+       micro       0.63      0.68      0.65        80
+       macro       0.67      0.62      0.65        80
+
+    accuracy                           0.60       320
+   macro avg       0.60      0.60      0.60       320
+weighted avg       0.60      0.60      0.60       320
+
+[[37 10 18 15]
+ [ 9 51 12  8]
+ [12 12 54  2]
+ [15 13  2 50]]
+Start Testing
+Test====================
+
+Epoch: 125, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.30      0.45      0.36        20
+         ITC       0.08      0.05      0.06        20
+       micro       0.38      0.70      0.49        20
+       macro       1.00      0.05      0.10        20
+
+    accuracy                           0.31        80
+   macro avg       0.44      0.31      0.25        80
+weighted avg       0.44      0.31      0.25        80
+
+[[ 9  5  6  0]
+ [ 6  1 13  0]
+ [ 4  2 14  0]
+ [11  4  4  1]]
+lr:3.0142605468260967e-06
+====================Train
+Epoch: 126, ceLoss: 0.9360, insLoss: 5.5611, Train loss: 2.6043
+              precision    recall  f1-score   support
+
+      normal       0.51      0.45      0.48        80
+         ITC       0.61      0.65      0.63        80
+       micro       0.68      0.71      0.70        80
+       macro       0.60      0.61      0.61        80
+
+    accuracy                           0.61       320
+   macro avg       0.60      0.61      0.60       320
+weighted avg       0.60      0.61      0.60       320
+
+[[36 10 20 14]
+ [ 9 52  6 13]
+ [10  8 57  5]
+ [15 15  1 49]]
+lr:2.9424282069744564e-06
+====================Train
+Epoch: 127, ceLoss: 0.9476, insLoss: 5.5757, Train loss: 2.6203
+              precision    recall  f1-score   support
+
+      normal       0.56      0.45      0.50        80
+         ITC       0.52      0.55      0.53        80
+       micro       0.60      0.65      0.62        80
+       macro       0.58      0.61      0.60        80
+
+    accuracy                           0.57       320
+   macro avg       0.57      0.57      0.56       320
+weighted avg       0.57      0.57      0.56       320
+
+[[36  8 22 14]
+ [11 44 12 13]
+ [ 7 13 52  8]
+ [10 20  1 49]]
+lr:2.871103542174637e-06
+====================Train
+Epoch: 128, ceLoss: 0.9388, insLoss: 5.5677, Train loss: 2.6091
+              precision    recall  f1-score   support
+
+      normal       0.58      0.46      0.51        80
+         ITC       0.54      0.61      0.57        80
+       micro       0.68      0.65      0.66        80
+       macro       0.61      0.68      0.64        80
+
+    accuracy                           0.60       320
+   macro avg       0.60      0.60      0.60       320
+weighted avg       0.60      0.60      0.60       320
+
+[[37 17 14 12]
+ [ 6 49 10 15]
+ [ 9 12 52  7]
+ [12 13  1 54]]
+lr:2.800304150720424e-06
+====================Train
+Epoch: 129, ceLoss: 0.9365, insLoss: 5.5439, Train loss: 2.5997
+              precision    recall  f1-score   support
+
+      normal       0.61      0.42      0.50        80
+         ITC       0.62      0.62      0.62        80
+       micro       0.60      0.70      0.65        80
+       macro       0.58      0.66      0.62        80
+
+    accuracy                           0.60       320
+   macro avg       0.60      0.60      0.60       320
+weighted avg       0.60      0.60      0.60       320
+
+[[34  7 20 19]
+ [ 4 50 11 15]
+ [ 8 12 56  4]
+ [10 11  6 53]]
+lr:2.7300475013022666e-06
+====================Train
+Epoch: 130, ceLoss: 0.9489, insLoss: 5.5650, Train loss: 2.6184
+              precision    recall  f1-score   support
+
+      normal       0.57      0.53      0.55        80
+         ITC       0.55      0.57      0.56        80
+       micro       0.63      0.68      0.65        80
+       macro       0.65      0.62      0.64        80
+
+    accuracy                           0.60       320
+   macro avg       0.60      0.60      0.60       320
+weighted avg       0.60      0.60      0.60       320
+
+[[42  9 17 12]
+ [11 46 12 11]
+ [11 11 54  4]
+ [10 17  3 50]]
+Start Testing
+Test====================
+
+Epoch: 130, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.25      0.35      0.29        20
+         ITC       0.00      0.00      0.00        20
+       micro       0.38      0.75      0.51        20
+       macro       0.33      0.05      0.09        20
+
+    accuracy                           0.29        80
+   macro avg       0.24      0.29      0.22        80
+weighted avg       0.24      0.29      0.22        80
+
+[[ 7  5  6  2]
+ [ 8  0 12  0]
+ [ 3  2 15  0]
+ [10  3  6  1]]
+lr:2.6603509286971342e-06
+====================Train
+Epoch: 131, ceLoss: 0.9410, insLoss: 5.5578, Train loss: 2.6083
+              precision    recall  f1-score   support
+
+      normal       0.52      0.38      0.43        80
+         ITC       0.55      0.65      0.60        80
+       micro       0.64      0.68      0.66        80
+       macro       0.65      0.69      0.67        80
+
+    accuracy                           0.60       320
+   macro avg       0.59      0.60      0.59       320
+weighted avg       0.59      0.60      0.59       320
+
+[[30 12 22 16]
+ [ 8 52  8 12]
+ [11 14 54  1]
+ [ 9 16  0 55]]
+lr:2.5912316294914232e-06
+====================Train
+Epoch: 132, ceLoss: 0.9464, insLoss: 5.5246, Train loss: 2.6038
+              precision    recall  f1-score   support
+
+      normal       0.57      0.45      0.50        80
+         ITC       0.55      0.57      0.56        80
+       micro       0.59      0.69      0.64        80
+       macro       0.64      0.64      0.64        80
+
+    accuracy                           0.59       320
+   macro avg       0.59      0.59      0.58       320
+weighted avg       0.59      0.59      0.58       320
+
+[[36 11 18 15]
+ [ 6 46 17 11]
+ [10 12 55  3]
+ [11 15  3 51]]
+lr:2.5227066578379624e-06
+====================Train
+Epoch: 133, ceLoss: 0.9039, insLoss: 5.5276, Train loss: 2.5621
+              precision    recall  f1-score   support
+
+      normal       0.62      0.51      0.56        80
+         ITC       0.70      0.69      0.69        80
+       micro       0.66      0.74      0.70        80
+       macro       0.66      0.71      0.69        80
+
+    accuracy                           0.66       320
+   macro avg       0.66      0.66      0.66       320
+weighted avg       0.66      0.66      0.66       320
+
+[[41  5 19 15]
+ [ 5 55  8 12]
+ [ 8 11 59  2]
+ [12  8  3 57]]
+lr:2.4547929212481436e-06
+====================Train
+Epoch: 134, ceLoss: 0.9141, insLoss: 5.5384, Train loss: 2.5756
+              precision    recall  f1-score   support
+
+      normal       0.56      0.46      0.51        80
+         ITC       0.58      0.66      0.62        80
+       micro       0.61      0.61      0.61        80
+       macro       0.67      0.69      0.68        80
+
+    accuracy                           0.61       320
+   macro avg       0.60      0.61      0.60       320
+weighted avg       0.60      0.61      0.60       320
+
+[[37 12 18 13]
+ [ 7 53 12  8]
+ [11 14 49  6]
+ [11 13  1 55]]
+lr:2.387507176420256e-06
+====================Train
+Epoch: 135, ceLoss: 0.9639, insLoss: 5.5026, Train loss: 2.6146
+              precision    recall  f1-score   support
+
+      normal       0.56      0.45      0.50        80
+         ITC       0.64      0.64      0.64        80
+       micro       0.61      0.71      0.66        80
+       macro       0.62      0.64      0.63        80
+
+    accuracy                           0.61       320
+   macro avg       0.61      0.61      0.61       320
+weighted avg       0.61      0.61      0.61       320
+
+[[36 10 23 11]
+ [ 6 51 11 12]
+ [ 9  6 57  8]
+ [13 13  3 51]]
+Start Testing
+Test====================
+
+Epoch: 135, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.25      0.40      0.31        20
+         ITC       0.08      0.05      0.06        20
+       micro       0.44      0.70      0.54        20
+       macro       0.33      0.05      0.09        20
+
+    accuracy                           0.30        80
+   macro avg       0.27      0.30      0.25        80
+weighted avg       0.27      0.30      0.25        80
+
+[[ 8  6  4  2]
+ [ 7  1 12  0]
+ [ 4  2 14  0]
+ [13  4  2  1]]
+lr:2.320866025105016e-06
+====================Train
+Epoch: 136, ceLoss: 0.9313, insLoss: 5.4947, Train loss: 2.5797
+              precision    recall  f1-score   support
+
+      normal       0.57      0.47      0.52        80
+         ITC       0.63      0.70      0.66        80
+       micro       0.63      0.69      0.66        80
+       macro       0.70      0.68      0.69        80
+
+    accuracy                           0.63       320
+   macro avg       0.63      0.63      0.63       320
+weighted avg       0.63      0.63      0.63       320
+
+[[38 12 21  9]
+ [ 7 56  8  9]
+ [ 8 12 55  5]
+ [14  9  3 54]]
+lr:2.254885910009341e-06
+====================Train
+Epoch: 137, ceLoss: 0.9159, insLoss: 5.4971, Train loss: 2.5650
+              precision    recall  f1-score   support
+
+      normal       0.67      0.49      0.57        80
+         ITC       0.55      0.56      0.56        80
+       micro       0.63      0.65      0.64        80
+       macro       0.62      0.75      0.68        80
+
+    accuracy                           0.61       320
+   macro avg       0.62      0.61      0.61       320
+weighted avg       0.62      0.61      0.61       320
+
+[[39 12 16 13]
+ [ 5 45 12 18]
+ [ 9 13 52  6]
+ [ 5 12  3 60]]
+lr:2.189583110739347e-06
+====================Train
+Epoch: 138, ceLoss: 0.9216, insLoss: 5.4817, Train loss: 2.5661
+              precision    recall  f1-score   support
+
+      normal       0.55      0.41      0.47        80
+         ITC       0.56      0.62      0.59        80
+       micro       0.62      0.66      0.64        80
+       macro       0.66      0.70      0.68        80
+
+    accuracy                           0.60       320
+   macro avg       0.60      0.60      0.60       320
+weighted avg       0.60      0.60      0.60       320
+
+[[33 11 21 15]
+ [ 9 50 10 11]
+ [10 14 53  3]
+ [ 8 15  1 56]]
+lr:2.1249737397836072e-06
+====================Train
+Epoch: 139, ceLoss: 0.9434, insLoss: 5.5058, Train loss: 2.5952
+              precision    recall  f1-score   support
+
+      normal       0.60      0.47      0.53        80
+         ITC       0.61      0.59      0.60        80
+       micro       0.59      0.69      0.64        80
+       macro       0.62      0.68      0.65        80
+
+    accuracy                           0.61       320
+   macro avg       0.61      0.61      0.60       320
+weighted avg       0.61      0.61      0.60       320
+
+[[38  7 20 15]
+ [ 5 47 14 14]
+ [10 11 55  4]
+ [10 12  4 54]]
+lr:2.061073738537635e-06
+====================Train
+Epoch: 140, ceLoss: 0.9154, insLoss: 5.4874, Train loss: 2.5617
+              precision    recall  f1-score   support
+
+      normal       0.52      0.45      0.48        80
+         ITC       0.61      0.68      0.64        80
+       micro       0.60      0.62      0.61        80
+       macro       0.70      0.69      0.69        80
+
+    accuracy                           0.61       320
+   macro avg       0.61      0.61      0.61       320
+weighted avg       0.61      0.61      0.61       320
+
+[[36 11 21 12]
+ [ 8 54  8 10]
+ [13 15 50  2]
+ [12  9  4 55]]
+Start Testing
+Test====================
+
+Epoch: 140, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.30      0.45      0.36        20
+         ITC       0.06      0.05      0.06        20
+       micro       0.42      0.65      0.51        20
+       macro       0.33      0.05      0.09        20
+
+    accuracy                           0.30        80
+   macro avg       0.28      0.30      0.25        80
+weighted avg       0.28      0.30      0.25        80
+
+[[ 9  7  3  1]
+ [ 8  1 11  0]
+ [ 3  3 13  1]
+ [10  5  4  1]]
+lr:1.9978988733705807e-06
+====================Train
+Epoch: 141, ceLoss: 0.9315, insLoss: 5.4297, Train loss: 2.5604
+              precision    recall  f1-score   support
+
+      normal       0.62      0.50      0.56        80
+         ITC       0.61      0.60      0.60        80
+       micro       0.60      0.74      0.66        80
+       macro       0.64      0.62      0.63        80
+
+    accuracy                           0.62       320
+   macro avg       0.62      0.62      0.61       320
+weighted avg       0.62      0.62      0.61       320
+
+[[40  9 20 11]
+ [ 2 48 16 14]
+ [ 8 10 59  3]
+ [14 12  4 50]]
+lr:1.935464731735117e-06
+====================Train
+Epoch: 142, ceLoss: 0.9554, insLoss: 5.4277, Train loss: 2.5838
+              precision    recall  f1-score   support
+
+      normal       0.56      0.41      0.47        80
+         ITC       0.59      0.65      0.62        80
+       micro       0.60      0.69      0.64        80
+       macro       0.61      0.62      0.62        80
+
+    accuracy                           0.59       320
+   macro avg       0.59      0.59      0.59       320
+weighted avg       0.59      0.59      0.59       320
+
+[[33 11 21 15]
+ [ 6 52 12 10]
+ [ 8 10 55  7]
+ [12 15  3 50]]
+lr:1.8737867183214743e-06
+====================Train
+Epoch: 143, ceLoss: 0.9293, insLoss: 5.4543, Train loss: 2.5656
+              precision    recall  f1-score   support
+
+      normal       0.55      0.45      0.49        80
+         ITC       0.58      0.65      0.61        80
+       micro       0.65      0.68      0.66        80
+       macro       0.64      0.65      0.65        80
+
+    accuracy                           0.61       320
+   macro avg       0.60      0.61      0.60       320
+weighted avg       0.60      0.61      0.60       320
+
+[[36 12 17 15]
+ [ 7 52 11 10]
+ [10 12 54  4]
+ [13 14  1 52]]
+lr:1.8128800512565514e-06
+====================Train
+Epoch: 144, ceLoss: 0.9171, insLoss: 5.4458, Train loss: 2.5508
+              precision    recall  f1-score   support
+
+      normal       0.65      0.54      0.59        80
+         ITC       0.59      0.65      0.62        80
+       micro       0.63      0.69      0.66        80
+       macro       0.67      0.66      0.67        80
+
+    accuracy                           0.63       320
+   macro avg       0.64      0.63      0.63       320
+weighted avg       0.64      0.63      0.63       320
+
+[[43 11 17  9]
+ [ 4 52 13 11]
+ [ 8 11 55  6]
+ [11 14  2 53]]
+lr:1.7527597583490825e-06
+====================Train
+Epoch: 145, ceLoss: 0.9094, insLoss: 5.4304, Train loss: 2.5385
+              precision    recall  f1-score   support
+
+      normal       0.58      0.44      0.50        80
+         ITC       0.59      0.62      0.61        80
+       micro       0.64      0.72      0.68        80
+       macro       0.58      0.61      0.60        80
+
+    accuracy                           0.60       320
+   macro avg       0.60      0.60      0.60       320
+weighted avg       0.60      0.60      0.60       320
+
+[[35  9 19 17]
+ [ 4 50 13 13]
+ [ 7 10 58  5]
+ [14 16  1 49]]
+Start Testing
+Test====================
+
+Epoch: 145, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.28      0.35      0.31        20
+         ITC       0.15      0.15      0.15        20
+       micro       0.42      0.65      0.51        20
+       macro       0.50      0.10      0.17        20
+
+    accuracy                           0.31        80
+   macro avg       0.34      0.31      0.28        80
+weighted avg       0.34      0.31      0.28        80
+
+[[ 7  7  4  2]
+ [ 6  3 11  0]
+ [ 3  4 13  0]
+ [ 9  6  3  2]]
+lr:1.6934406733817417e-06
+====================Train
+Epoch: 146, ceLoss: 0.8884, insLoss: 5.4372, Train loss: 2.5195
+              precision    recall  f1-score   support
+
+      normal       0.61      0.57      0.59        80
+         ITC       0.62      0.60      0.61        80
+       micro       0.69      0.70      0.70        80
+       macro       0.66      0.71      0.69        80
+
+    accuracy                           0.65       320
+   macro avg       0.65      0.65      0.65       320
+weighted avg       0.65      0.65      0.65       320
+
+[[46 10 15  9]
+ [ 8 48  9 15]
+ [11  8 56  5]
+ [11 11  1 57]]
+lr:1.634937432451133e-06
+====================Train
+Epoch: 147, ceLoss: 0.9682, insLoss: 5.4320, Train loss: 2.5978
+              precision    recall  f1-score   support
+
+      normal       0.52      0.47      0.50        80
+         ITC       0.56      0.57      0.57        80
+       micro       0.63      0.74      0.68        80
+       macro       0.60      0.54      0.57        80
+
+    accuracy                           0.58       320
+   macro avg       0.58      0.58      0.58       320
+weighted avg       0.58      0.58      0.58       320
+
+[[38 12 17 13]
+ [ 6 46 14 14]
+ [10  9 59  2]
+ [19 15  3 43]]
+lr:1.5772644703565564e-06
+====================Train
+Epoch: 148, ceLoss: 0.8885, insLoss: 5.4198, Train loss: 2.5145
+              precision    recall  f1-score   support
+
+      normal       0.63      0.55      0.59        80
+         ITC       0.59      0.60      0.60        80
+       micro       0.63      0.62      0.63        80
+       macro       0.67      0.75      0.71        80
+
+    accuracy                           0.63       320
+   macro avg       0.63      0.63      0.63       320
+weighted avg       0.63      0.63      0.63       320
+
+[[44  9 17 10]
+ [ 6 48  9 17]
+ [11 16 50  3]
+ [ 9  8  3 60]]
+lr:1.5204360170384286e-06
+====================Train
+Epoch: 149, ceLoss: 0.9179, insLoss: 5.4208, Train loss: 2.5442
+              precision    recall  f1-score   support
+
+      normal       0.57      0.42      0.49        80
+         ITC       0.59      0.71      0.64        80
+       micro       0.66      0.70      0.68        80
+       macro       0.63      0.61      0.62        80
+
+    accuracy                           0.61       320
+   macro avg       0.61      0.61      0.61       320
+weighted avg       0.61      0.61      0.61       320
+
+[[34 12 20 14]
+ [ 4 57  6 13]
+ [ 9 13 56  2]
+ [13 15  3 49]]
+lr:1.4644660940672628e-06
+====================Train
+Epoch: 150, ceLoss: 0.9038, insLoss: 5.4161, Train loss: 2.5286
+              precision    recall  f1-score   support
+
+      normal       0.56      0.44      0.49        80
+         ITC       0.60      0.69      0.64        80
+       micro       0.55      0.60      0.57        80
+       macro       0.71      0.70      0.70        80
+
+    accuracy                           0.61       320
+   macro avg       0.61      0.61      0.60       320
+weighted avg       0.61      0.61      0.60       320
+
+[[35  8 25 12]
+ [ 7 55 11  7]
+ [13 15 48  4]
+ [ 8 13  3 56]]
+Start Testing
+Test====================
+
+Epoch: 150, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.26      0.35      0.30        20
+         ITC       0.11      0.10      0.10        20
+       micro       0.42      0.65      0.51        20
+       macro       0.33      0.05      0.09        20
+
+    accuracy                           0.29        80
+   macro avg       0.28      0.29      0.25        80
+weighted avg       0.28      0.29      0.25        80
+
+[[ 7  7  4  2]
+ [ 7  2 11  0]
+ [ 3  4 13  0]
+ [10  6  3  1]]
+lr:1.4093685111840567e-06
+====================Train
+Epoch: 151, ceLoss: 0.9113, insLoss: 5.4098, Train loss: 2.5343
+              precision    recall  f1-score   support
+
+      normal       0.65      0.54      0.59        80
+         ITC       0.57      0.59      0.58        80
+       micro       0.59      0.61      0.60        80
+       macro       0.56      0.62      0.59        80
+
+    accuracy                           0.59       320
+   macro avg       0.59      0.59      0.59       320
+weighted avg       0.59      0.59      0.59       320
+
+[[43  4 19 14]
+ [ 4 47 11 18]
+ [ 8 16 49  7]
+ [11 15  4 50]]
+lr:1.3551568628929434e-06
+====================Train
+Epoch: 152, ceLoss: 0.9194, insLoss: 5.3965, Train loss: 2.5384
+              precision    recall  f1-score   support
+
+      normal       0.63      0.47      0.54        80
+         ITC       0.57      0.65      0.61        80
+       micro       0.58      0.61      0.60        80
+       macro       0.61      0.65      0.63        80
+
+    accuracy                           0.60       320
+   macro avg       0.60      0.60      0.59       320
+weighted avg       0.60      0.60      0.59       320
+
+[[38 10 20 12]
+ [ 6 52  9 13]
+ [ 9 14 49  8]
+ [ 7 15  6 52]]
+lr:1.301844525106951e-06
+====================Train
+Epoch: 153, ceLoss: 0.9217, insLoss: 5.4281, Train loss: 2.5501
+              precision    recall  f1-score   support
+
+      normal       0.59      0.51      0.55        80
+         ITC       0.57      0.65      0.60        80
+       micro       0.72      0.74      0.73        80
+       macro       0.66      0.62      0.64        80
+
+    accuracy                           0.63       320
+   macro avg       0.63      0.63      0.63       320
+weighted avg       0.63      0.63      0.63       320
+
+[[41 15 12 12]
+ [ 7 52 10 11]
+ [ 8 10 59  3]
+ [14 15  1 50]]
+lr:1.2494446518477022e-06
+====================Train
+Epoch: 154, ceLoss: 0.9719, insLoss: 5.4118, Train loss: 2.5955
+              precision    recall  f1-score   support
+
+      normal       0.62      0.46      0.53        80
+         ITC       0.61      0.66      0.63        80
+       micro       0.59      0.62      0.61        80
+       macro       0.61      0.68      0.64        80
+
+    accuracy                           0.61       320
+   macro avg       0.61      0.61      0.60       320
+weighted avg       0.61      0.61      0.60       320
+
+[[37 13 18 12]
+ [ 4 53 12 11]
+ [ 6 13 50 11]
+ [13  8  5 54]]
+lr:1.1979701719998454e-06
+====================Train
+Epoch: 155, ceLoss: 0.9406, insLoss: 5.4014, Train loss: 2.5610
+              precision    recall  f1-score   support
+
+      normal       0.62      0.49      0.55        80
+         ITC       0.58      0.60      0.59        80
+       micro       0.62      0.71      0.66        80
+       macro       0.62      0.64      0.63        80
+
+    accuracy                           0.61       320
+   macro avg       0.61      0.61      0.61       320
+weighted avg       0.61      0.61      0.61       320
+
+[[39 10 17 14]
+ [ 5 48 13 14]
+ [ 8 12 57  3]
+ [11 13  5 51]]
+Start Testing
+Test====================
+
+Epoch: 155, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.24      0.30      0.27        20
+         ITC       0.07      0.05      0.06        20
+       micro       0.39      0.75      0.52        20
+       macro       0.50      0.05      0.09        20
+
+    accuracy                           0.29        80
+   macro avg       0.30      0.29      0.23        80
+weighted avg       0.30      0.29      0.23        80
+
+[[ 6  7  6  1]
+ [ 6  1 13  0]
+ [ 2  3 15  0]
+ [11  4  4  1]]
+lr:1.1474337861210543e-06
+====================Train
+Epoch: 156, ceLoss: 0.9061, insLoss: 5.4325, Train loss: 2.5359
+              precision    recall  f1-score   support
+
+      normal       0.63      0.54      0.58        80
+         ITC       0.58      0.66      0.62        80
+       micro       0.63      0.69      0.66        80
+       macro       0.66      0.61      0.64        80
+
+    accuracy                           0.62       320
+   macro avg       0.63      0.62      0.62       320
+weighted avg       0.63      0.62      0.62       320
+
+[[43  9 19  9]
+ [ 6 53 11 10]
+ [ 9 10 55  6]
+ [10 19  2 49]]
+lr:1.097847963308352e-06
+====================Train
+Epoch: 157, ceLoss: 0.9491, insLoss: 5.4038, Train loss: 2.5702
+              precision    recall  f1-score   support
+
+      normal       0.54      0.47      0.50        80
+         ITC       0.55      0.55      0.55        80
+       micro       0.62      0.66      0.64        80
+       macro       0.58      0.61      0.60        80
+
+    accuracy                           0.57       320
+   macro avg       0.57      0.57      0.57       320
+weighted avg       0.57      0.57      0.57       320
+
+[[38 13 16 13]
+ [ 7 44 14 15]
+ [11  9 53  7]
+ [15 14  2 49]]
+lr:1.049224938121548e-06
+====================Train
+Epoch: 158, ceLoss: 0.9127, insLoss: 5.3942, Train loss: 2.5309
+              precision    recall  f1-score   support
+
+      normal       0.60      0.46      0.52        80
+         ITC       0.57      0.64      0.60        80
+       micro       0.62      0.66      0.64        80
+       macro       0.65      0.66      0.65        80
+
+    accuracy                           0.61       320
+   macro avg       0.61      0.61      0.60       320
+weighted avg       0.61      0.61      0.60       320
+
+[[37 10 19 14]
+ [ 3 51 13 13]
+ [ 9 16 53  2]
+ [13 13  1 53]]
+lr:1.0015767075645472e-06
+====================Train
+Epoch: 159, ceLoss: 0.9242, insLoss: 5.3795, Train loss: 2.5380
+              precision    recall  f1-score   support
+
+      normal       0.53      0.53      0.53        80
+         ITC       0.60      0.62      0.61        80
+       micro       0.71      0.76      0.73        80
+       macro       0.65      0.59      0.62        80
+
+    accuracy                           0.62       320
+   macro avg       0.62      0.62      0.62       320
+weighted avg       0.62      0.62      0.62       320
+
+[[42 11 14 13]
+ [11 50  8 11]
+ [ 8 10 61  1]
+ [18 12  3 47]]
+lr:9.549150281252633e-07
+====================Train
+Epoch: 160, ceLoss: 0.9277, insLoss: 5.4024, Train loss: 2.5484
+              precision    recall  f1-score   support
+
+      normal       0.58      0.42      0.49        80
+         ITC       0.62      0.60      0.61        80
+       micro       0.61      0.74      0.67        80
+       macro       0.63      0.68      0.65        80
+
+    accuracy                           0.61       320
+   macro avg       0.61      0.61      0.60       320
+weighted avg       0.61      0.61      0.60       320
+
+[[34  8 22 16]
+ [ 9 48 10 13]
+ [ 8 10 59  3]
+ [ 8 12  6 54]]
+Start Testing
+Test====================
+
+Epoch: 160, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.29      0.40      0.33        20
+         ITC       0.00      0.00      0.00        20
+       micro       0.41      0.75      0.53        20
+       macro       0.67      0.10      0.17        20
+
+    accuracy                           0.31        80
+   macro avg       0.34      0.31      0.26        80
+weighted avg       0.34      0.31      0.26        80
+
+[[ 8  6  5  1]
+ [ 7  0 13  0]
+ [ 4  1 15  0]
+ [ 9  5  4  2]]
+lr:9.092514128748837e-07
+====================Train
+Epoch: 161, ceLoss: 0.9377, insLoss: 5.3750, Train loss: 2.5501
+              precision    recall  f1-score   support
+
+      normal       0.54      0.46      0.50        80
+         ITC       0.58      0.57      0.58        80
+       micro       0.62      0.68      0.65        80
+       macro       0.60      0.65      0.63        80
+
+    accuracy                           0.59       320
+   macro avg       0.59      0.59      0.59       320
+weighted avg       0.59      0.59      0.59       320
+
+[[37  8 18 17]
+ [10 46 14 10]
+ [ 9 10 54  7]
+ [12 15  1 52]]
+lr:8.645971286271915e-07
+====================Train
+Epoch: 162, ceLoss: 0.9522, insLoss: 5.3953, Train loss: 2.5708
+              precision    recall  f1-score   support
+
+      normal       0.51      0.39      0.44        80
+         ITC       0.62      0.66      0.64        80
+       micro       0.58      0.66      0.62        80
+       macro       0.67      0.68      0.67        80
+
+    accuracy                           0.60       320
+   macro avg       0.59      0.60      0.59       320
+weighted avg       0.59      0.60      0.59       320
+
+[[31 11 21 17]
+ [ 6 53 14  7]
+ [14 10 53  3]
+ [10 12  4 54]]
+lr:8.209631931586499e-07
+====================Train
+Epoch: 163, ceLoss: 0.9045, insLoss: 5.3844, Train loss: 2.5198
+              precision    recall  f1-score   support
+
+      normal       0.64      0.54      0.59        80
+         ITC       0.59      0.62      0.61        80
+       micro       0.64      0.70      0.67        80
+       macro       0.67      0.68      0.67        80
+
+    accuracy                           0.63       320
+   macro avg       0.64      0.63      0.63       320
+weighted avg       0.64      0.63      0.63       320
+
+[[43 10 18  9]
+ [ 6 50 12 12]
+ [ 7 11 56  6]
+ [11 14  1 54]]
+lr:7.783603724899258e-07
+====================Train
+Epoch: 164, ceLoss: 0.9159, insLoss: 5.3711, Train loss: 2.5272
+              precision    recall  f1-score   support
+
+      normal       0.59      0.49      0.53        80
+         ITC       0.56      0.66      0.61        80
+       micro       0.68      0.65      0.66        80
+       macro       0.61      0.62      0.62        80
+
+    accuracy                           0.61       320
+   macro avg       0.61      0.61      0.60       320
+weighted avg       0.61      0.61      0.60       320
+
+[[39 11 16 14]
+ [ 5 53  6 16]
+ [11 15 52  2]
+ [11 16  3 50]]
+lr:7.367991782295403e-07
+====================Train
+Epoch: 165, ceLoss: 0.8994, insLoss: 5.3804, Train loss: 2.5136
+              precision    recall  f1-score   support
+
+      normal       0.63      0.46      0.53        80
+         ITC       0.57      0.66      0.61        80
+       micro       0.63      0.64      0.63        80
+       macro       0.61      0.66      0.63        80
+
+    accuracy                           0.61       320
+   macro avg       0.61      0.61      0.60       320
+weighted avg       0.61      0.61      0.60       320
+
+[[37  9 19 15]
+ [ 2 53 11 14]
+ [ 9 15 51  5]
+ [11 16  0 53]]
+Start Testing
+Test====================
+
+Epoch: 165, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.29      0.50      0.37        20
+         ITC       0.06      0.05      0.06        20
+       micro       0.41      0.60      0.49        20
+       macro       1.00      0.05      0.10        20
+
+    accuracy                           0.30        80
+   macro avg       0.44      0.30      0.25        80
+weighted avg       0.44      0.30      0.25        80
+
+[[10  7  3  0]
+ [ 7  1 12  0]
+ [ 5  3 12  0]
+ [12  5  2  1]]
+lr:6.962898649802813e-07
+====================Train
+Epoch: 166, ceLoss: 0.9132, insLoss: 5.3714, Train loss: 2.5246
+              precision    recall  f1-score   support
+
+      normal       0.56      0.46      0.51        80
+         ITC       0.61      0.66      0.63        80
+       micro       0.66      0.70      0.68        80
+       macro       0.67      0.69      0.68        80
+
+    accuracy                           0.63       320
+   macro avg       0.62      0.63      0.62       320
+weighted avg       0.62      0.63      0.62       320
+
+[[37 14 17 12]
+ [ 5 53 10 12]
+ [11 10 56  3]
+ [13 10  2 55]]
+lr:6.568424278090435e-07
+====================Train
+Epoch: 167, ceLoss: 0.9185, insLoss: 5.3851, Train loss: 2.5340
+              precision    recall  f1-score   support
+
+      normal       0.57      0.54      0.55        80
+         ITC       0.61      0.61      0.61        80
+       micro       0.62      0.65      0.63        80
+       macro       0.64      0.64      0.64        80
+
+    accuracy                           0.61       320
+   macro avg       0.61      0.61      0.61       320
+weighted avg       0.61      0.61      0.61       320
+
+[[43  9 18 10]
+ [ 7 49 12 12]
+ [10 11 52  7]
+ [16 11  2 51]]
+lr:6.184665997806822e-07
+====================Train
+Epoch: 168, ceLoss: 0.8965, insLoss: 5.3640, Train loss: 2.5057
+              precision    recall  f1-score   support
+
+      normal       0.66      0.46      0.54        80
+         ITC       0.65      0.64      0.64        80
+       micro       0.69      0.76      0.72        80
+       macro       0.59      0.71      0.65        80
+
+    accuracy                           0.64       320
+   macro avg       0.65      0.64      0.64       320
+weighted avg       0.65      0.64      0.64       320
+
+[[37  7 15 21]
+ [ 5 51 10 14]
+ [ 6  9 61  4]
+ [ 8 12  3 57]]
+lr:5.811718495565327e-07
+====================Train
+Epoch: 169, ceLoss: 0.9122, insLoss: 5.3324, Train loss: 2.5120
+              precision    recall  f1-score   support
+
+      normal       0.57      0.50      0.53        80
+         ITC       0.60      0.64      0.62        80
+       micro       0.59      0.66      0.62        80
+       macro       0.65      0.61      0.63        80
+
+    accuracy                           0.60       320
+   macro avg       0.60      0.60      0.60       320
+weighted avg       0.60      0.60      0.60       320
+
+[[40  8 21 11]
+ [ 4 51 13 12]
+ [12 12 53  3]
+ [14 14  3 49]]
+lr:5.449673790581611e-07
+====================Train
+Epoch: 170, ceLoss: 0.8958, insLoss: 5.3605, Train loss: 2.5039
+              precision    recall  f1-score   support
+
+      normal       0.63      0.47      0.54        80
+         ITC       0.64      0.65      0.65        80
+       micro       0.68      0.78      0.73        80
+       macro       0.61      0.68      0.64        80
+
+    accuracy                           0.64       320
+   macro avg       0.64      0.64      0.64       320
+weighted avg       0.64      0.64      0.64       320
+
+[[38  9 16 17]
+ [ 4 52 12 12]
+ [ 5  8 62  5]
+ [13 12  1 54]]
+Start Testing
+Test====================
+
+Epoch: 170, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.30      0.50      0.38        20
+         ITC       0.07      0.05      0.06        20
+       micro       0.40      0.60      0.48        20
+       macro       1.00      0.10      0.18        20
+
+    accuracy                           0.31        80
+   macro avg       0.44      0.31      0.27        80
+weighted avg       0.44      0.31      0.27        80
+
+[[10  7  3  0]
+ [ 7  1 12  0]
+ [ 5  3 12  0]
+ [11  4  3  2]]
+lr:5.098621211969224e-07
+====================Train
+Epoch: 171, ceLoss: 0.8906, insLoss: 5.3683, Train loss: 2.5011
+              precision    recall  f1-score   support
+
+      normal       0.64      0.49      0.55        80
+         ITC       0.60      0.65      0.62        80
+       micro       0.64      0.70      0.67        80
+       macro       0.67      0.71      0.69        80
+
+    accuracy                           0.64       320
+   macro avg       0.64      0.64      0.63       320
+weighted avg       0.64      0.64      0.63       320
+
+[[39 11 16 14]
+ [ 6 52 13  9]
+ [ 7 12 56  5]
+ [ 9 12  2 57]]
+lr:4.758647376699033e-07
+====================Train
+Epoch: 172, ceLoss: 0.9108, insLoss: 5.3520, Train loss: 2.5164
+              precision    recall  f1-score   support
+
+      normal       0.54      0.44      0.48        80
+         ITC       0.65      0.66      0.65        80
+       micro       0.64      0.68      0.65        80
+       macro       0.65      0.71      0.68        80
+
+    accuracy                           0.62       320
+   macro avg       0.62      0.62      0.62       320
+weighted avg       0.62      0.62      0.62       320
+
+[[35  8 22 15]
+ [ 8 53  7 12]
+ [11 11 54  4]
+ [11 10  2 57]]
+lr:4.4298361682277467e-07
+====================Train
+Epoch: 173, ceLoss: 0.9031, insLoss: 5.3559, Train loss: 2.5099
+              precision    recall  f1-score   support
+
+      normal       0.57      0.46      0.51        80
+         ITC       0.66      0.62      0.64        80
+       micro       0.62      0.72      0.67        80
+       macro       0.66      0.71      0.69        80
+
+    accuracy                           0.63       320
+   macro avg       0.63      0.63      0.63       320
+weighted avg       0.63      0.63      0.63       320
+
+[[37 10 20 13]
+ [ 6 50 12 12]
+ [ 7 11 58  4]
+ [15  5  3 57]]
+lr:4.112268715800954e-07
+====================Train
+Epoch: 174, ceLoss: 0.9046, insLoss: 5.3606, Train loss: 2.5127
+              precision    recall  f1-score   support
+
+      normal       0.59      0.54      0.56        80
+         ITC       0.56      0.61      0.58        80
+       micro       0.67      0.71      0.69        80
+       macro       0.65      0.60      0.62        80
+
+    accuracy                           0.62       320
+   macro avg       0.62      0.62      0.61       320
+weighted avg       0.62      0.62      0.61       320
+
+[[43 10 18  9]
+ [ 6 49  9 16]
+ [11 11 57  1]
+ [13 18  1 48]]
+lr:3.8060233744356745e-07
+====================Train
+Epoch: 175, ceLoss: 0.9168, insLoss: 5.3682, Train loss: 2.5273
+              precision    recall  f1-score   support
+
+      normal       0.58      0.46      0.51        80
+         ITC       0.66      0.64      0.65        80
+       micro       0.60      0.69      0.64        80
+       macro       0.66      0.72      0.69        80
+
+    accuracy                           0.63       320
+   macro avg       0.63      0.63      0.62       320
+weighted avg       0.63      0.63      0.62       320
+
+[[37  6 20 17]
+ [ 6 51 13 10]
+ [11 11 55  3]
+ [10  9  3 58]]
+Start Testing
+Test====================
+
+Epoch: 175, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.33      0.55      0.42        20
+         ITC       0.07      0.05      0.06        20
+       micro       0.43      0.65      0.52        20
+       macro       1.00      0.10      0.18        20
+
+    accuracy                           0.34        80
+   macro avg       0.46      0.34      0.29        80
+weighted avg       0.46      0.34      0.29        80
+
+[[11  6  3  0]
+ [ 7  1 12  0]
+ [ 4  3 13  0]
+ [11  5  2  2]]
+lr:3.511175705587433e-07
+====================Train
+Epoch: 176, ceLoss: 0.9430, insLoss: 5.3827, Train loss: 2.5578
+              precision    recall  f1-score   support
+
+      normal       0.58      0.50      0.54        80
+         ITC       0.56      0.61      0.59        80
+       micro       0.64      0.60      0.62        80
+       macro       0.58      0.65      0.62        80
+
+    accuracy                           0.59       320
+   macro avg       0.59      0.59      0.59       320
+weighted avg       0.59      0.59      0.59       320
+
+[[40 11 16 13]
+ [ 6 49  9 16]
+ [ 8 16 48  8]
+ [15 11  2 52]]
+lr:3.227798458506631e-07
+====================Train
+Epoch: 177, ceLoss: 0.9004, insLoss: 5.3745, Train loss: 2.5127
+              precision    recall  f1-score   support
+
+      normal       0.58      0.47      0.52        80
+         ITC       0.59      0.60      0.59        80
+       micro       0.62      0.69      0.65        80
+       macro       0.67      0.71      0.69        80
+
+    accuracy                           0.62       320
+   macro avg       0.62      0.62      0.62       320
+weighted avg       0.62      0.62      0.62       320
+
+[[38 12 19 11]
+ [ 6 48 12 14]
+ [11 11 55  3]
+ [10 11  2 57]]
+lr:2.9559615522887275e-07
+====================Train
+Epoch: 178, ceLoss: 0.9183, insLoss: 5.3722, Train loss: 2.5299
+              precision    recall  f1-score   support
+
+      normal       0.56      0.51      0.54        80
+         ITC       0.59      0.55      0.57        80
+       micro       0.65      0.71      0.68        80
+       macro       0.62      0.65      0.63        80
+
+    accuracy                           0.61       320
+   macro avg       0.60      0.61      0.60       320
+weighted avg       0.60      0.61      0.60       320
+
+[[41  8 19 12]
+ [ 6 44 12 18]
+ [11 10 57  2]
+ [15 13  0 52]]
+lr:2.6957320586227354e-07
+====================Train
+Epoch: 179, ceLoss: 0.8778, insLoss: 5.3745, Train loss: 2.4901
+              precision    recall  f1-score   support
+
+      normal       0.56      0.42      0.48        80
+         ITC       0.59      0.64      0.61        80
+       micro       0.66      0.68      0.67        80
+       macro       0.63      0.71      0.67        80
+
+    accuracy                           0.61       320
+   macro avg       0.61      0.61      0.61       320
+weighted avg       0.61      0.61      0.61       320
+
+[[34 10 16 20]
+ [ 6 51 12 11]
+ [11 12 54  3]
+ [10 13  0 57]]
+lr:2.447174185242324e-07
+====================Train
+Epoch: 180, ceLoss: 0.8863, insLoss: 5.3560, Train loss: 2.4931
+              precision    recall  f1-score   support
+
+      normal       0.67      0.47      0.55        80
+         ITC       0.60      0.64      0.62        80
+       micro       0.64      0.71      0.67        80
+       macro       0.66      0.74      0.70        80
+
+    accuracy                           0.64       320
+   macro avg       0.64      0.64      0.64       320
+weighted avg       0.64      0.64      0.64       320
+
+[[38 10 19 13]
+ [ 3 51 13 13]
+ [ 7 12 57  4]
+ [ 9 12  0 59]]
+Start Testing
+Test====================
+
+Epoch: 180, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.30      0.45      0.36        20
+         ITC       0.06      0.05      0.06        20
+       micro       0.44      0.70      0.54        20
+       macro       1.00      0.10      0.18        20
+
+    accuracy                           0.33        80
+   macro avg       0.45      0.33      0.28        80
+weighted avg       0.45      0.33      0.28        80
+
+[[ 9  7  4  0]
+ [ 7  1 12  0]
+ [ 3  3 14  0]
+ [11  5  2  2]]
+lr:2.210349260083494e-07
+====================Train
+Epoch: 181, ceLoss: 0.9032, insLoss: 5.3423, Train loss: 2.5059
+              precision    recall  f1-score   support
+
+      normal       0.61      0.53      0.56        80
+         ITC       0.60      0.64      0.62        80
+       micro       0.62      0.66      0.64        80
+       macro       0.70      0.71      0.71        80
+
+    accuracy                           0.63       320
+   macro avg       0.63      0.63      0.63       320
+weighted avg       0.63      0.63      0.63       320
+
+[[42 11 18  9]
+ [ 7 51 12 10]
+ [10 12 53  5]
+ [10 11  2 57]]
+lr:1.9853157161528524e-07
+====================Train
+Epoch: 182, ceLoss: 0.9517, insLoss: 5.3424, Train loss: 2.5544
+              precision    recall  f1-score   support
+
+      normal       0.58      0.45      0.51        80
+         ITC       0.56      0.64      0.60        80
+       micro       0.61      0.69      0.65        80
+       macro       0.60      0.57      0.59        80
+
+    accuracy                           0.59       320
+   macro avg       0.59      0.59      0.58       320
+weighted avg       0.59      0.59      0.58       320
+
+[[36  9 20 15]
+ [ 5 51 15  9]
+ [ 7 11 55  7]
+ [14 20  0 46]]
+lr:1.772129077110102e-07
+====================Train
+Epoch: 183, ceLoss: 0.8597, insLoss: 5.3479, Train loss: 2.4641
+              precision    recall  f1-score   support
+
+      normal       0.62      0.50      0.56        80
+         ITC       0.59      0.69      0.64        80
+       micro       0.71      0.69      0.70        80
+       macro       0.66      0.71      0.69        80
+
+    accuracy                           0.65       320
+   macro avg       0.65      0.65      0.64       320
+weighted avg       0.65      0.65      0.64       320
+
+[[40 15 15 10]
+ [ 6 55  7 12]
+ [ 8 10 55  7]
+ [10 13  0 57]]
+lr:1.5708419435684518e-07
+====================Train
+Epoch: 184, ceLoss: 0.8829, insLoss: 5.3451, Train loss: 2.4865
+              precision    recall  f1-score   support
+
+      normal       0.61      0.49      0.54        80
+         ITC       0.63      0.69      0.66        80
+       micro       0.66      0.71      0.69        80
+       macro       0.60      0.62      0.61        80
+
+    accuracy                           0.63       320
+   macro avg       0.63      0.63      0.63       320
+weighted avg       0.63      0.63      0.63       320
+
+[[39  7 17 17]
+ [ 3 55 10 12]
+ [ 9 10 57  4]
+ [13 15  2 50]]
+lr:1.3815039801161723e-07
+====================Train
+Epoch: 185, ceLoss: 0.9087, insLoss: 5.3677, Train loss: 2.5189
+              precision    recall  f1-score   support
+
+      normal       0.57      0.45      0.50        80
+         ITC       0.65      0.74      0.69        80
+       micro       0.63      0.64      0.63        80
+       macro       0.67      0.71      0.69        80
+
+    accuracy                           0.63       320
+   macro avg       0.63      0.63      0.63       320
+weighted avg       0.63      0.63      0.63       320
+
+[[36  8 22 14]
+ [ 2 59  8 11]
+ [12 14 51  3]
+ [13 10  0 57]]
+Start Testing
+Test====================
+
+Epoch: 185, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.33      0.55      0.42        20
+         ITC       0.00      0.00      0.00        20
+       micro       0.41      0.70      0.52        20
+       macro       1.00      0.10      0.18        20
+
+    accuracy                           0.34        80
+   macro avg       0.44      0.34      0.28        80
+weighted avg       0.44      0.34      0.28        80
+
+[[11  5  4  0]
+ [ 8  0 12  0]
+ [ 4  2 14  0]
+ [10  4  4  2]]
+lr:1.2041619030626338e-07
+====================Train
+Epoch: 186, ceLoss: 0.9319, insLoss: 5.3816, Train loss: 2.5464
+              precision    recall  f1-score   support
+
+      normal       0.62      0.45      0.52        80
+         ITC       0.54      0.60      0.57        80
+       micro       0.63      0.61      0.62        80
+       macro       0.55      0.65      0.59        80
+
+    accuracy                           0.58       320
+   macro avg       0.58      0.58      0.58       320
+weighted avg       0.58      0.58      0.58       320
+
+[[36  8 18 18]
+ [ 5 48  8 19]
+ [10 15 49  6]
+ [ 7 18  3 52]]
+lr:1.038859468911707e-07
+====================Train
+Epoch: 187, ceLoss: 0.9077, insLoss: 5.3431, Train loss: 2.5106
+              precision    recall  f1-score   support
+
+      normal       0.54      0.42      0.48        80
+         ITC       0.56      0.62      0.59        80
+       micro       0.59      0.65      0.62        80
+       macro       0.68      0.68      0.68        80
+
+    accuracy                           0.59       320
+   macro avg       0.59      0.59      0.59       320
+weighted avg       0.59      0.59      0.59       320
+
+[[34 11 24 11]
+ [ 7 50  9 14]
+ [11 16 52  1]
+ [11 12  3 54]]
+lr:8.85637463565564e-08
+====================Train
+Epoch: 188, ceLoss: 0.8865, insLoss: 5.3651, Train loss: 2.4960
+              precision    recall  f1-score   support
+
+      normal       0.62      0.53      0.57        80
+         ITC       0.65      0.70      0.67        80
+       micro       0.65      0.65      0.65        80
+       macro       0.67      0.72      0.70        80
+
+    accuracy                           0.65       320
+   macro avg       0.65      0.65      0.65       320
+weighted avg       0.65      0.65      0.65       320
+
+[[42 13 13 12]
+ [ 3 56 12  9]
+ [10 11 52  7]
+ [13  6  3 58]]
+lr:7.445336922613067e-08
+====================Train
+Epoch: 189, ceLoss: 0.8873, insLoss: 5.3560, Train loss: 2.4940
+              precision    recall  f1-score   support
+
+      normal       0.58      0.47      0.52        80
+         ITC       0.60      0.69      0.64        80
+       micro       0.63      0.68      0.65        80
+       macro       0.68      0.65      0.67        80
+
+    accuracy                           0.62       320
+   macro avg       0.62      0.62      0.62       320
+weighted avg       0.62      0.62      0.62       320
+
+[[38 12 20 10]
+ [ 5 55 10 10]
+ [ 9 13 54  4]
+ [14 12  2 52]]
+lr:6.15582970243117e-08
+====================Train
+Epoch: 190, ceLoss: 0.9271, insLoss: 5.3502, Train loss: 2.5321
+              precision    recall  f1-score   support
+
+      normal       0.59      0.51      0.55        80
+         ITC       0.61      0.66      0.63        80
+       micro       0.61      0.64      0.63        80
+       macro       0.64      0.65      0.65        80
+
+    accuracy                           0.62       320
+   macro avg       0.61      0.62      0.61       320
+weighted avg       0.61      0.62      0.61       320
+
+[[41  6 20 13]
+ [ 3 53 12 12]
+ [12 13 51  4]
+ [13 15  0 52]]
+Start Testing
+Test====================
+
+Epoch: 190, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.31      0.60      0.41        20
+         ITC       0.00      0.00      0.00        20
+       micro       0.42      0.65      0.51        20
+       macro       1.00      0.05      0.10        20
+
+    accuracy                           0.33        80
+   macro avg       0.43      0.33      0.25        80
+weighted avg       0.43      0.33      0.25        80
+
+[[12  4  4  0]
+ [ 8  0 12  0]
+ [ 5  2 13  0]
+ [14  3  2  1]]
+lr:4.988171141721232e-08
+====================Train
+Epoch: 191, ceLoss: 0.9037, insLoss: 5.3669, Train loss: 2.5138
+              precision    recall  f1-score   support
+
+      normal       0.55      0.41      0.47        80
+         ITC       0.60      0.66      0.63        80
+       micro       0.63      0.65      0.64        80
+       macro       0.61      0.68      0.64        80
+
+    accuracy                           0.60       320
+   macro avg       0.60      0.60      0.59       320
+weighted avg       0.60      0.60      0.59       320
+
+[[33 11 21 15]
+ [ 5 53  8 14]
+ [ 8 14 52  6]
+ [14 10  2 54]]
+lr:3.9426493427611177e-08
+====================Train
+Epoch: 192, ceLoss: 0.8708, insLoss: 5.3625, Train loss: 2.4795
+              precision    recall  f1-score   support
+
+      normal       0.62      0.51      0.56        80
+         ITC       0.62      0.68      0.65        80
+       micro       0.69      0.76      0.73        80
+       macro       0.68      0.68      0.68        80
+
+    accuracy                           0.66       320
+   macro avg       0.65      0.66      0.65       320
+weighted avg       0.65      0.66      0.65       320
+
+[[41 12 17 10]
+ [ 4 54  9 13]
+ [ 7 10 61  2]
+ [14 11  1 54]]
+lr:3.019522272410202e-08
+====================Train
+Epoch: 193, ceLoss: 0.9447, insLoss: 5.3543, Train loss: 2.5510
+              precision    recall  f1-score   support
+
+      normal       0.57      0.46      0.51        80
+         ITC       0.61      0.70      0.65        80
+       micro       0.59      0.60      0.60        80
+       macro       0.68      0.70      0.69        80
+
+    accuracy                           0.62       320
+   macro avg       0.61      0.62      0.61       320
+weighted avg       0.61      0.62      0.61       320
+
+[[37  9 20 14]
+ [ 7 56 10  7]
+ [12 15 48  5]
+ [ 9 12  3 56]]
+lr:2.219017698460002e-08
+====================Train
+Epoch: 194, ceLoss: 0.8980, insLoss: 5.3464, Train loss: 2.5019
+              precision    recall  f1-score   support
+
+      normal       0.57      0.54      0.55        80
+         ITC       0.57      0.62      0.60        80
+       micro       0.64      0.61      0.63        80
+       macro       0.63      0.65      0.64        80
+
+    accuracy                           0.61       320
+   macro avg       0.61      0.61      0.61       320
+weighted avg       0.61      0.61      0.61       320
+
+[[43  8 15 14]
+ [10 50 10 10]
+ [11 14 49  6]
+ [11 15  2 52]]
+lr:1.541333133436018e-08
+====================Train
+Epoch: 195, ceLoss: 0.8896, insLoss: 5.3462, Train loss: 2.4935
+              precision    recall  f1-score   support
+
+      normal       0.60      0.46      0.52        80
+         ITC       0.62      0.59      0.60        80
+       micro       0.65      0.76      0.70        80
+       macro       0.64      0.70      0.67        80
+
+    accuracy                           0.63       320
+   macro avg       0.63      0.63      0.62       320
+weighted avg       0.63      0.63      0.62       320
+
+[[37 10 17 16]
+ [ 5 47 15 13]
+ [ 8  8 61  3]
+ [12 11  1 56]]
+Start Testing
+Test====================
+
+Epoch: 195, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.34      0.55      0.42        20
+         ITC       0.00      0.00      0.00        20
+       micro       0.40      0.70      0.51        20
+       macro       1.00      0.05      0.10        20
+
+    accuracy                           0.33        80
+   macro avg       0.44      0.33      0.26        80
+weighted avg       0.44      0.33      0.26        80
+
+[[11  5  4  0]
+ [ 8  0 12  0]
+ [ 3  3 14  0]
+ [10  4  5  1]]
+lr:9.866357858642206e-09
+====================Train
+Epoch: 196, ceLoss: 0.9315, insLoss: 5.3484, Train loss: 2.5360
+              precision    recall  f1-score   support
+
+      normal       0.62      0.49      0.55        80
+         ITC       0.62      0.62      0.62        80
+       micro       0.57      0.68      0.62        80
+       macro       0.71      0.74      0.72        80
+
+    accuracy                           0.63       320
+   macro avg       0.63      0.63      0.63       320
+weighted avg       0.63      0.63      0.63       320
+
+[[39  9 21 11]
+ [ 4 50 15 11]
+ [11 13 54  2]
+ [ 9  8  4 59]]
+lr:5.5506251901504825e-09
+====================Train
+Epoch: 197, ceLoss: 0.9147, insLoss: 5.3554, Train loss: 2.5213
+              precision    recall  f1-score   support
+
+      normal       0.60      0.51      0.55        80
+         ITC       0.60      0.60      0.60        80
+       micro       0.61      0.64      0.62        80
+       macro       0.59      0.65      0.62        80
+
+    accuracy                           0.60       320
+   macro avg       0.60      0.60      0.60       320
+weighted avg       0.60      0.60      0.60       320
+
+[[41  6 16 17]
+ [ 4 48 13 15]
+ [11 14 51  4]
+ [12 12  4 52]]
+lr:2.4671981713420003e-09
+====================Train
+Epoch: 198, ceLoss: 0.8919, insLoss: 5.3417, Train loss: 2.4944
+              precision    recall  f1-score   support
+
+      normal       0.62      0.47      0.54        80
+         ITC       0.58      0.65      0.61        80
+       micro       0.62      0.70      0.66        80
+       macro       0.67      0.66      0.67        80
+
+    accuracy                           0.62       320
+   macro avg       0.62      0.62      0.62       320
+weighted avg       0.62      0.62      0.62       320
+
+[[38 10 19 13]
+ [ 6 52 12 10]
+ [ 7 14 56  3]
+ [10 14  3 53]]
+lr:6.168375916970615e-10
+====================Train
+Epoch: 199, ceLoss: 0.9096, insLoss: 5.3543, Train loss: 2.5159
+              precision    recall  f1-score   support
+
+      normal       0.60      0.53      0.56        80
+         ITC       0.60      0.74      0.66        80
+       micro       0.65      0.68      0.66        80
+       macro       0.77      0.66      0.71        80
+
+    accuracy                           0.65       320
+   macro avg       0.66      0.65      0.65       320
+weighted avg       0.66      0.65      0.65       320
+
+[[42 14 16  8]
+ [ 7 59  8  6]
+ [10 14 54  2]
+ [11 11  5 53]]
+lr:0.0
+====================Train
+Epoch: 200, ceLoss: 0.8648, insLoss: 5.3487, Train loss: 2.4694
+              precision    recall  f1-score   support
+
+      normal       0.64      0.46      0.54        80
+         ITC       0.54      0.61      0.57        80
+       micro       0.62      0.66      0.64        80
+       macro       0.71      0.76      0.73        80
+
+    accuracy                           0.62       320
+   macro avg       0.63      0.62      0.62       320
+weighted avg       0.63      0.62      0.62       320
+
+[[37 14 20  9]
+ [ 6 49 12 13]
+ [ 8 16 53  3]
+ [ 7 12  0 61]]
+Start Testing
+Test====================
+
+Epoch: 200, Test Set, Loss: 0.0000, Test error: 0.0000
+              precision    recall  f1-score   support
+
+      normal       0.31      0.55      0.40        20
+         ITC       0.00      0.00      0.00        20
+       micro       0.41      0.65      0.50        20
+       macro       1.00      0.05      0.10        20
+
+    accuracy                           0.31        80
+   macro avg       0.43      0.31      0.25        80
+weighted avg       0.43      0.31      0.25        80
+
+[[11  5  4  0]
+ [ 8  0 12  0]
+ [ 4  3 13  0]
+ [12  4  3  1]]
