@@ -111,6 +111,7 @@ def l2_normalize(x, dim=1):
 
 def repeat_1d_tensor(t, num_reps):
     return t.unsqueeze(1).expand(-1, num_reps)
+
 class MemoryBank(object):
     """For efficiently computing the background vectors."""
 
@@ -405,6 +406,23 @@ class LocalAggregationLossModule(torch.nn.Module):
         new_data_memory = self.updated_new_data_memory(self.indices, self.outputs)
 
         return loss, new_data_memory
+
+# class MocoLossModule(torch.nn.Module):
+    
+#     def __init__(self, base_encoder, dim=128, K=65536, m=0.999, T=0.07, mlp=False):
+#         """
+#         dim: feature dimension (default: 128)
+#         K: queue size; number of negative keys (default: 65536)
+#         m: moco momentum of updating key encoder (default: 0.999)
+#         T: softmax temperature (default: 0.07)
+#         """
+#         super(MoCo, self).__init__()
+
+#         self.K = K
+#         self.m = m
+#         self.T = T
+
+#         def forward()
 
 
 def run_kmeans(x, nmb_clusters, verbose=False,

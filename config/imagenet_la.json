@@ -1,5 +1,5 @@
 {
-    "exp_base": "/home/tclin/Documents/Git/LocalAggregation-Pytorch/experiments_data",
+    "exp_base": "./experiments_data",
     "debug":false,
     "exp_name": "imagenet_la",
     "exp_id": "res18_LA",
@@ -9,36 +9,16 @@
     "faiss_gpu_device": null,
     "seed": 1337,
     "data_loader_workers": 32,
-    "data_params": {
-        "rot_imagenet": 0,
-        "image_size": 224,
-        "image_augment": true
-    },
     "model_params": {
-        "out_dim": 128,
-        "resnet_version": "preact-resnet18"
+        "out_dim": 128
     },
     "loss_params": {
-        "k": 4096,
+        "k": 256,
         "t": 0.07,
         "m": 0.5,
-        "kmeans_k": 1000,
-        "n_kmeans": 10,
+        "kmeans_k": 100,
+        "n_kmeans": 5,
         "kmeans_freq": null,
         "loss": "LocalAggregationLossModule"
-    },
-    "optim_params": {
-        "batch_size": 128,
-        "learning_rate": 0.03,
-        "lr_decay_schedule": [160, 190],
-        "lr_decay_rate": 0.1,
-        "momentum": 0.9,
-        "weight_decay": 1e-4,
-        "validate_freq": 1
-    },
-    "num_epochs": 200,
-    "validate": true,
-    "copy_checkpoint_freq": null,
-    "instance_exp_dir": "/home/tclin/Documents/Git/LocalAggregation-Pytorch/experiments_data/experiments/imagenet_ir/res18_IR",
-    "pretrained_exp_dir": null
+    }
 }

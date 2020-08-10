@@ -1,0 +1,2 @@
+[INFO] - 2020-08-07 15:17:21,785 - root - : Experiment directory is located at ./experiments_data/experiments/imagenet_la/res18_LA in /home/walkingwind/Append/experiment/GraphMIL/utils/setup.py:102
+[INFO] - 2020-08-07 15:17:21,785 - root - : Configurations and directories successfully set up. in /home/walkingwind/Append/experiment/GraphMIL/utils/setup.py:105
