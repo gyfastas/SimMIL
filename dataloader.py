@@ -105,12 +105,12 @@ class HISMIL(ImageFolder):
 
 
 class HISMIL_DoubleAug(ImageFolder):
-    def __init__(self, root, patch_size, augmentation, floder=0, ratio=0.7, train=False):
+    def __init__(self, root, patch_size, transform, floder=0, ratio=0.8, train=False):
         super(HISMIL_DoubleAug, self).__init__(root)
         self.patch_size = patch_size
         self.classes = 4
         self.classes_len = 100
-        self.transform = transforms.Compose(augmentation)
+        self.transform = transform
         # self._save_patches()
         self.folder = self._shuffle_CV(floder, ratio, train)
 
@@ -180,12 +180,11 @@ class HISMIL_DoubleAug(ImageFolder):
                 idx = idx_init + cnt
                 cnt += 1
                 if self.transform is not None:
-                    sample_q = self.transform(sample)
-                    sample_k = self.transform(sample)
+                    sample = self.transform(sample)
                 if self.target_transform is not None:
                     target = self.target_transform(target)
-                bag_list1 = torch.cat((bag_list1, sample_q.unsqueeze(0)))
-                bag_list2 = torch.cat((bag_list2, sample_k.unsqueeze(0)))
+                bag_list1 = torch.cat((bag_list1, sample[0].unsqueeze(0)))
+                bag_list2 = torch.cat((bag_list2, sample[1] .unsqueeze(0)))
                 idx_list = torch.cat((idx_list, torch.tensor([idx])))
         # batch_idx = torch.ones_like(idx_list)*index
         return idx_list, (bag_list1, bag_list2), torch.tensor([target]).long()

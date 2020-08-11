@@ -24,12 +24,14 @@ from PIL import ImageFilter
 import random
 from logger import Logger
 import datetime
-from utils.utils import MemoryBank, InstanceDiscriminationLossModule, LocalAggregationLossModule, Kmeans
+from utils.utils import MemoryBank, InstanceDiscriminationLossModule, LocalAggregationLossModule, MocoLossModule, Kmeans
 from utils.utils import TwoCropsTransform
 from utils.setup import process_config
+
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(models.__dict__[name]))
+
 from utils.utils import fix_bn, GaussianBlur, adjust_learning_rate, print_args, cal_metrics, \
     _init_cluster_labels
 from models.resnet import resnet18
@@ -71,18 +73,20 @@ parser.add_argument('--n_topk', type=int, default=4,
                     help='K of KNN')
 parser.add_argument('--agg_mode', type=str, default='attention',
                     help='attention/graph/residual(concat)')
+parser.add_argument('--momentum', type=float, default=0.999,
+                    help='momentum used in MOCO')                    
 parser.add_argument('--ema', type=float, default=0.99, metavar='EMA',
                     help='exponential moving average')
 # loss weight
-parser.add_argument('--weight_self', type=float, default=0)
-parser.add_argument('--weight_mse', type=float, default=1)
+parser.add_argument('--weight_self', type=float, default=0.1)
+parser.add_argument('--weight_mse', type=float, default=0)
 parser.add_argument('--weight_l1', type=float, default=0)
 # Data and logging
 parser.add_argument('--ratio', type=float, default=0.8,
                     help='the ratio of train dataset')
 parser.add_argument('--folder', type=int, default=0,
                     help='CV folder')
-parser.add_argument('--data_dir', type=str, default='..',
+parser.add_argument('--data_dir', type=str, default='/remote-home/source/DATA',
                     help='local: ../'
                          'remote: /remote-home/my/datasets/BASH')
 parser.add_argument('--log_dir', default='./experiments', type=str,
@@ -108,7 +112,7 @@ logger.backup_files(
 loader_kwargs = {'num_workers': 8, 'pin_memory': True} if args.cuda else {}
 
 ins_path = os.path.join(args.data_dir, 'patch/train')
-bag_path = os.path.join(args.data_dir, 'WSI/train')
+bag_path = os.path.join(args.data_dir, 'BASH')
 
 aug_train = [
             #aug_plus
@@ -181,6 +185,8 @@ if args.weight_self != 0:
         if config.loss_params.kmeans_freq is None:
            config.loss_params.kmeans_freq = (
                     len(train_loader) )
+    elif config.loss_params.loss == 'MocoLossModule':
+        Ins_Module = MocoLossModule(memory_bank.bank_broadcast)
     else:
         Ins_Module = InstanceDiscriminationLossModule(memory_bank.bank_broadcast,
                          cluster_labels_broadcast=None,
@@ -192,11 +198,12 @@ if args.weight_self != 0:
 
 attention = find_class_by_name(args.attention, [FeaAgg])
 graph = find_class_by_name(args.graph, [FeaAgg])
-consistent = (args.weight_mse != 0) | (args.weight_l1 != 0)
+consistent =  (args.weight_mse != 0) | (args.weight_l1 != 0)
 model = GraphCon(args.agg_mode,
                  ResBackbone, args.arch, args.pretrained,
                  AggNet, attention, graph, args.n_topk,
-                 m=args.ema,
+                 ema=args.ema,
+                 momentum = args.momentum,
                  consistent=consistent)
 
 if args.cuda:
@@ -261,6 +268,10 @@ def train_multi_batch(epoch):
         optimizer.zero_grad()
         # calculate loss and metrics
         Y_prob_q, self_feat_q, Attention_q, Affinity_q, (Ga_q, Gg_q, G_q) = model(img_q, batch=batch) ##preds: [N] , gt： [N]
+        if args.weight_self != 0:
+            self_feat_k = model.self_supervised_forward(img_k)
+        # compute logits
+        # loss, new_data_memory = Ins_Module.forward(idx, self_feat_q, self_feat_k, config.gpu_device)
         if consistent:
             _, _, Attention_k, Affinity_k, (Ga_k, Gg_k, G_k) = model.consistent_forward(img_k, batch=batch)
         ce_loss = criterion_ce(Y_prob_q, bag_label)
@@ -275,9 +286,9 @@ def train_multi_batch(epoch):
             l1_loss = criterion_l1(Gg_q, Gg_k)
             loss += args.weight_l1 * l1_loss
         if args.weight_self != 0:
-            INS_loss += ins_loss.item()
             ins_loss, new_data_memory = Ins_Module(
-                idx, self_feat_q, torch.arange(len(config.gpu_device)))
+                idx, self_feat_q, self_feat_k, torch.arange(len(config.gpu_device)))
+            INS_loss += ins_loss.item()
             loss += args.weight_self * ins_loss
 
         # print info

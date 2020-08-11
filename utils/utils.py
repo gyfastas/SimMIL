@@ -117,6 +117,7 @@ def l2_normalize(x, dim=1):
 
 def repeat_1d_tensor(t, num_reps):
     return t.unsqueeze(1).expand(-1, num_reps)
+
 class MemoryBank(object):
     """For efficiently computing the background vectors."""
 
@@ -413,32 +414,27 @@ class LocalAggregationLossModule(torch.nn.Module):
         return loss, new_data_memory
 
 class MocoLossModule(torch.nn.Module):
-    def __init__(self, memory_bank_broadcast, k=4096, t=0.07, m=0.999):
+    def __init__(self, memory_bank_broadcast, k=4096, t=0.07):
         super(MocoLossModule, self).__init__()
-        self.k, self.t, self.m = k, t, m
-
+        
+        self.k = k
+        self.t = t
         self.indices = None
-        self.outputs = None
+        self.fea_q = None
+        self.fea_k = None
         self._bank = None  # pass in via forward function
         self.memory_bank_broadcast = memory_bank_broadcast
         self.data_len = memory_bank_broadcast[0].size(0)
 
     def _softmax(self, dot_prods):
-        Z = 2876934.2 / 1281167 * self.data_len
-        return torch.exp(dot_prods / self.t) / Z
+
+        return torch.exp(dot_prods / self.t)
 
     def updated_new_data_memory(self, indices, outputs):
-        outputs = l2_normalize(outputs)
+
         data_memory = torch.index_select(self._bank, 0, indices)
         new_data_memory = data_memory * self.m + (1 - self.m) * outputs
         return l2_normalize(new_data_memory, dim=1)
-
-    def synchronization_check(self):
-        for i in range(len(self.memory_bank_broadcast)):
-            if i == 0:
-                device = self.memory_bank_broadcast[0].device
-            else:
-                assert torch.equal(self.memory_bank_broadcast[0], self.memory_bank_broadcast[i].to(device))
 
     def _get_dot_products(self, vec, idxs):
         """
@@ -474,51 +470,44 @@ class MocoLossModule(torch.nn.Module):
         assert list(prods.size()) == memory_vecs_shape
 
         return torch.sum(prods, dim=-1)
-
+    
     def compute_data_prob(self):
-        logits = self._get_dot_products(self.outputs, self.indices)
-        return self._softmax(logits)
+        logits = torch.einsum('nc,nc->n', [self.fea_q, self.fea_k]).unsqueeze(-1)
+        data_probs = self._softmax(logits)
+        return data_probs
 
     def compute_noise_prob(self):
         batch_size = self.indices.size(0)
         noise_indx = torch.randint(0, self.data_len, (batch_size, self.k),
-                                   device=self.outputs.device)  # U(0, data_len)
+                                   device=self.fea_q.device)  # U(0, data_len)
         noise_indx = noise_indx.long()
-        logits = self._get_dot_products(self.outputs, noise_indx)
+        logits = self._get_dot_products(self.fea_q, noise_indx)
         noise_probs = self._softmax(logits)
         return noise_probs
 
-    def forward(self, indices, outputs, gpu_idx):
-        self.indices = indices.detach()
-        self.outputs = l2_normalize(outputs, dim=1)
+    def forward(self,idx, fea_q, fea_k, gpu_idx):
+        
+        self.indices = idx.detach()
+        self.fea_q = torch.nn.functional.normalize(fea_q, dim=1)
+        self.fea_k = torch.nn.functional.normalize(fea_k, dim=1)
         self._bank = self.memory_bank_broadcast[gpu_idx]
-
+        
         batch_size = self.indices.size(0)
+        # positive logits: Nx1
         data_prob = self.compute_data_prob()
+        # negative logits: NxK
         noise_prob = self.compute_noise_prob()
-
+        
         assert data_prob.size(0) == batch_size
         assert noise_prob.size(0) == batch_size
         assert noise_prob.size(1) == self.k
 
-        base_prob = 1.0 / self.data_len
-        eps = 1e-7
+        loss = - torch.sum(torch.log(data_prob)) + torch.sum(torch.log(noise_prob))
+        loss = loss/batch_size
 
-        ## Pmt
-        data_div = data_prob + (self.k * base_prob + eps)
+        new_data_memory = self.updated_new_data_memory(self.indices, self.fea_k)
 
-        ln_data = torch.log(data_prob) - torch.log(data_div)
-
-        ## Pon
-        noise_div = noise_prob + (self.k * base_prob + eps)
-        ln_noise = math.log(self.k * base_prob) - torch.log(noise_div)
-
-        curr_loss = -(torch.sum(ln_data) + torch.sum(ln_noise))
-        curr_loss = curr_loss / batch_size
-
-        new_data_memory = self.updated_new_data_memory(self.indices, self.outputs)
-
-        return curr_loss.unsqueeze(0), new_data_memory
+        return loss, new_data_memory
 
 
 def run_kmeans(x, nmb_clusters, verbose=False,
@@ -657,28 +646,3 @@ def _init_cluster_labels(config, data_len):
     cluster_labels = cluster_labels.unsqueeze(0).repeat(no_kmeans_k, 1)
     broadcast_cluster_labels = torch.cuda.comm.broadcast(cluster_labels, config.gpu_device)
     return broadcast_cluster_labels
-
-@torch.no_grad()
-def momentum_update_key_encoder(encoder_q, encoder_k):
-    for param_q, param_k in zip(encoder_q.parameters(), encoder_k.parameters()):
-        param_k.data = param_k.data * config.loss_params.m + param_q.data * (1. - config.loss_params.m)
-
-@torch.no_grad()
-def batch_shuffle(x):
-    """
-    Batch shuffle, for making use of BatchNorm.
-    """
-    # gather from all gpus
-    batch_size = x.shape[0]
-
-    # random shuffle index
-    idx_shuffle = torch.randperm(batch_size).cuda()
-
-    # index for restoring
-    idx_unshuffle = torch.argsort(idx_shuffle)
-
-    # shuffled index for this gpu
-    gpu_idx = torch.distributed.get_rank()
-    idx_this = idx_shuffle.view(num_gpus, -1)[gpu_idx]
-
-    return x_gather[idx_this], idx_unshuffle
