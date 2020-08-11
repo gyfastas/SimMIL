@@ -14,16 +14,16 @@ from torchvision import models, transforms
 import os
 from logger import Logger
 import datetime
-from utils.utils import MemoryBank, InstanceDiscriminationLossModule, LocalAggregationLossModule, Kmeans
+from MemoryBank.memorybank import MemoryBank, InstanceDiscriminationLossModule, LocalAggregationLossModule, \
+    Kmeans, _init_cluster_labels
 from utils.utils import TwoCropsTransform
 from utils.setup import process_config
+from utils.utils import fix_bn, GaussianBlur, adjust_learning_rate, print_args, cal_metrics
+import torch.nn as nn
+from utils.utils import find_class_by_name, adjust_weight
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(models.__dict__[name]))
-from utils.utils import fix_bn, GaussianBlur, adjust_learning_rate, print_args, cal_metrics, \
-    _init_cluster_labels
-import torch.nn as nn
-from utils.utils import find_class_by_name, adjust_weight
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch HISMIL')
@@ -155,9 +155,6 @@ test_loader = data_utils.DataLoader(test_dataset,
 #                                     shuffle=False,
 #                                     **loader_kwargs)
 print('Init Model')
-
-
-
 
 # memory bank
 if args.weight_self != 0:
