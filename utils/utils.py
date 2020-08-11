@@ -55,7 +55,7 @@ class GaussianBlur(object):
         return x
 
 
-def qqadjust_learning_rate(optimizer, epoch, args, logger):
+def adjust_learning_rate(optimizer, epoch, args, logger):
     """Decay the learning rate based on schedule"""
     lr = args.lr
     if args.cos:  # cosine lr schedule
