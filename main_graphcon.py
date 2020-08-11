@@ -1,6 +1,7 @@
 from __future__ import print_function
 import argparse
 import torch
+import torch.backends.cudnn as cudnn
 import torch.utils.data as data_utils
 import torch.optim as optim
 from dataloader import HISMIL, HISMIL_DoubleAug
@@ -51,7 +52,7 @@ parser.add_argument('-a', '--arch', metavar='ARCH', default='resnet18',
                     help='model architecture: ' +
                         ' | '.join(model_names) +
                         ' (default: resnet50)')
-parser.add_argument('--attention', type=str, default='Agg_GAttention',
+parser.add_argument('--attention', type=str, default='Agg_Attention',
                     help='Agg_GAttention/Agg_SAttention/Agg_Attention')
 parser.add_argument('--graph', type=str, default='GraphMILNet',
                     help='Choose graph')
@@ -87,7 +88,7 @@ args = parser.parse_args()
 config = process_config(args.config)
 
 torch.manual_seed(args.seed)
-
+cudnn.benchmark = True
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
     print('\nGPU is ON!')
@@ -159,27 +160,27 @@ print('Init Model')
 
 
 # memory bank
-
-data_len = len(train_dataset)*48 #WSIs * patches
-memory_bank = MemoryBank(data_len,  config.model_params.out_dim, config.gpu_device) #128D, gpu-id=0
-# init self-module
-if config.loss_params.loss == 'LocalAggregationLossModule':
-    # init cluster
-    cluster_labels = _init_cluster_labels(config, data_len)
-    Ins_Module = LocalAggregationLossModule(memory_bank.bank_broadcast,
-                     cluster_labels,
-                     k=config.loss_params.k,
-                     t=config.loss_params.t,
-                     m=config.loss_params.m)
-    if config.loss_params.kmeans_freq is None:
-       config.loss_params.kmeans_freq = (
-                len(train_loader) )
-else:
-    Ins_Module = InstanceDiscriminationLossModule(memory_bank.bank_broadcast,
-                     cluster_labels_broadcast=None,
-                     k=config.loss_params.k,
-                     t=config.loss_params.t,
-                     m=config.loss_params.m)
+if args.weight_self != 0:
+    data_len = len(train_dataset)*48 #WSIs * patches
+    memory_bank = MemoryBank(data_len,  config.model_params.out_dim, config.gpu_device) #128D, gpu-id=0
+    # init self-module
+    if config.loss_params.loss == 'LocalAggregationLossModule':
+        # init cluster
+        cluster_labels = _init_cluster_labels(config, data_len)
+        Ins_Module = LocalAggregationLossModule(memory_bank.bank_broadcast,
+                         cluster_labels,
+                         k=config.loss_params.k,
+                         t=config.loss_params.t,
+                         m=config.loss_params.m)
+        if config.loss_params.kmeans_freq is None:
+           config.loss_params.kmeans_freq = (
+                    len(train_loader) )
+    else:
+        Ins_Module = InstanceDiscriminationLossModule(memory_bank.bank_broadcast,
+                         cluster_labels_broadcast=None,
+                         k=config.loss_params.k,
+                         t=config.loss_params.t,
+                         m=config.loss_params.m)
 
 # choose agg model
 attention = find_class_by_name(args.attention, [FeaAgg])
@@ -226,16 +227,22 @@ def train_multi_batch(epoch):
             = model(img_q, img_k, batch, bag_idx, bag_label) ##preds: [N] , gt： [N]
         # calculate loss and metrics
         ce_loss = criterion_ce(Y_prob_q, bag_label)
-        baginfo_loss = criterion_ce(logits, labels)
-        mse_loss = criterion_mse(Affinity_q, Affinity_k)/data[0].shape[0]
-        ins_loss, new_data_memory = Ins_Module(
-            ins_idx, self_fea_q, torch.arange(len(config.gpu_device)))
-        total_loss = ce_loss + args.weight_bag * baginfo_loss + args.weight_mse * mse_loss + args.weight_self * ins_loss
-        # print Info
+        total_loss = ce_loss
         CE_loss += ce_loss.item()
-        INS_loss += ins_loss.item()
-        BagInfo_loss += baginfo_loss.item()
-        MSE_loss += mse_loss.item()
+        if args.weight_bag != 0:
+            baginfo_loss = criterion_ce(logits, labels)
+            BagInfo_loss += baginfo_loss.item()
+            total_loss = total_loss + baginfo_loss
+        if args.weight_mse != 0:
+            mse_loss = criterion_mse(Affinity_q, Affinity_k)/data[0].shape[0]
+            MSE_loss += mse_loss.item()
+            total_loss = total_loss + mse_loss
+        if args.weight_self != 0:
+            ins_loss, new_data_memory = Ins_Module(
+                ins_idx, self_fea_q, torch.arange(len(config.gpu_device)))
+            INS_loss += ins_loss.item()
+            total_loss = total_loss + ins_loss
+
         train_loss += total_loss.item()
         preds_list.extend([torch.argmax(Y_prob_q, dim=1)[i].item() for i in range(Y_prob_q.shape[0])])
         gt_list.extend([bag_label[i].item() for i in range(bag_label.shape[0])])
@@ -244,25 +251,26 @@ def train_multi_batch(epoch):
         # step
         optimizer.step()
         #update memo and cluster
-        with torch.no_grad():
-            memory_bank.update(ins_idx, new_data_memory)
-            Ins_Module.memory_bank_broadcast = memory_bank.bank_broadcast  # update loss_fn
-            if (config.loss_params.loss == 'LocalAggregationLossModule' and
-                    (Ins_Module.first_iteration_kmeans or batch_idx == (config.loss_params.kmeans_freq-1))):
-                if Ins_Module.first_iteration_kmeans:
-                    Ins_Module.first_iteration_kmeans = False
-                    # get kmeans clustering (update our saved clustering)
-                k = [config.loss_params.kmeans_k for _ in
-                     range(config.loss_params.n_kmeans)]
-                # NOTE: we use a different gpu for FAISS otherwise cannot fit onto memory
-                km = Kmeans(k, memory_bank, gpu_device=config.gpu_device)
-                cluster_labels = km.compute_clusters()
+        if args.weight_self != 0:
+            with torch.no_grad():
+                memory_bank.update(ins_idx, new_data_memory)
+                Ins_Module.memory_bank_broadcast = memory_bank.bank_broadcast  # update loss_fn
+                if (config.loss_params.loss == 'LocalAggregationLossModule' and
+                        (Ins_Module.first_iteration_kmeans or batch_idx == (config.loss_params.kmeans_freq-1))):
+                    if Ins_Module.first_iteration_kmeans:
+                        Ins_Module.first_iteration_kmeans = False
+                        # get kmeans clustering (update our saved clustering)
+                    k = [config.loss_params.kmeans_k for _ in
+                         range(config.loss_params.n_kmeans)]
+                    # NOTE: we use a different gpu for FAISS otherwise cannot fit onto memory
+                    km = Kmeans(k, memory_bank, gpu_device=config.gpu_device)
+                    cluster_labels = km.compute_clusters()
 
-                # broadcast the cluster_labels after modification
-                for i in range(len(config.gpu_device)):
-                    device = Ins_Module.cluster_label_broadcast[i].device
-                    Ins_Module.cluster_label_broadcast[i] = cluster_labels.to(
-                        device)
+                    # broadcast the cluster_labels after modification
+                    for i in range(len(config.gpu_device)):
+                        device = Ins_Module.cluster_label_broadcast[i].device
+                        Ins_Module.cluster_label_broadcast[i] = cluster_labels.to(
+                            device)
 
     # calculate loss and error for epoch
     CE_loss /= len(train_loader)
@@ -305,7 +313,7 @@ if __name__ == "__main__":
     logger.log_string('Start Training')
     print_args(args, logger)
     for epoch in range(1, args.epochs + 1):
-        test(epoch)
+        # test(epoch)
         adjust_learning_rate(optimizer, epoch, args, logger)
         # train(epoch)
         train_multi_batch(epoch)
