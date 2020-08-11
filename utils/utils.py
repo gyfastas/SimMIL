@@ -55,7 +55,7 @@ class GaussianBlur(object):
         return x
 
 
-def adjust_learning_rate(optimizer, epoch, args, logger):
+def qqadjust_learning_rate(optimizer, epoch, args, logger):
     """Decay the learning rate based on schedule"""
     lr = args.lr
     if args.cos:  # cosine lr schedule
@@ -549,3 +549,33 @@ def _init_cluster_labels(config, data_len):
     cluster_labels = cluster_labels.unsqueeze(0).repeat(no_kmeans_k, 1)
     broadcast_cluster_labels = torch.cuda.comm.broadcast(cluster_labels, config.gpu_device)
     return broadcast_cluster_labels
+
+
+# if args.pretrained:
+#     if os.path.isfile(args.pretrained):
+#         print("=> loading checkpoint '{}'".format(args.pretrained))
+#         checkpoint = torch.load(args.pretrained, map_location="cpu")
+#
+#         # rename moco pre-trained keys
+#         state_dict = checkpoint['state_dict']
+#         # for k in list(state_dict.keys()):
+#         #     # retain only encoder_q up to before the embedding layer
+#         #     if k.startswith('module.encoder_q') and not k.startswith('module.encoder_q.fc'):
+#         #         # remove prefix
+#         #         state_dict[k[len("module.encoder_q."):]] = state_dict[k]
+#         #     # delete renamed or unused k
+#         #     del state_dict[k]
+#         for k in list(state_dict.keys()):
+#             if k.startswith('attention') or k.startswith('classifier'):
+#                 del state_dict[k]
+#
+#
+#         args.start_epoch = 0
+#         msg = model1.load_state_dict(state_dict, strict=False)
+#         if msg.missing_keys:
+#             print(msg.missing_keys)
+#         print("=> loaded pre-trained model '{}'".format(args.pretrained))
+#     else:
+#         print("=> no checkpoint found at '{}'".format(args.pretrained))
+#
+# parameters = list(filter(lambda p: p.requires_grad, model2.parameters()))
