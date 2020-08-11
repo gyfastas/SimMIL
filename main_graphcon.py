@@ -86,8 +86,8 @@ parser.add_argument('--ratio', type=float, default=0.8,
                     help='the ratio of train dataset')
 parser.add_argument('--folder', type=int, default=0,
                     help='CV folder')
-parser.add_argument('--data_dir', type=str, default='/remote-home/source/DATA',
-                    help='local: ../'
+parser.add_argument('--data_dir', type=str, default='/media/walkingwind/Transcend',
+                    help='local: /media/walkingwind/Transcend'
                          'remote: /remote-home/my/datasets/BASH')
 parser.add_argument('--log_dir', default='./experiments', type=str,
                     help='path to moco pretrained checkpoint')
