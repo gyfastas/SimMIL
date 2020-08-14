@@ -1,45 +1,35 @@
 from __future__ import print_function
 
-import numpy as np
-
 import argparse
 import torch
+import torch.backends.cudnn as cudnn
 import torch.utils.data as data_utils
 import torch.optim as optim
-from torch.autograd import Variable
-# from remote_loader import HISMIL
 from dataloader import HISMIL, HISMIL_DoubleAug
 from Builder.e2e import Attention, GatedAttention, Res18, Res18_SAFS
 from Builder import FeaAgg
 from Builder.FeaAgg import ResBackbone, AggNet
 from Builder.GraphCon import GraphCon
 from tqdm import tqdm
-import numpy as np
-import math
 from torchvision import models, transforms
-from sklearn import metrics
-from sklearn.metrics import classification_report, confusion_matrix
 import os
-from PIL import ImageFilter
-import random
 from logger import Logger
 import datetime
-from utils.utils import MemoryBank, InstanceDiscriminationLossModule, LocalAggregationLossModule, MocoLossModule, Kmeans
-from utils.utils import TwoCropsTransform
+from MemoryBank.memorybank import MemoryBank, InstanceDiscriminationLossModule, LocalAggregationLossModule, \
+    Kmeans, MocoLossModule
+from MemoryBank.mb_utils import _init_cluster_labels
+from utils.utils import TwoCropsTransform, GaussianBlur
 from utils.setup import process_config
+from utils.utils import fix_bn, GaussianBlur, adjust_learning_rate, print_args, cal_metrics
+import torch.nn as nn
+from utils.utils import find_class_by_name, adjust_weight
 
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(models.__dict__[name]))
 
-from utils.utils import fix_bn, GaussianBlur, adjust_learning_rate, print_args, cal_metrics, \
-    _init_cluster_labels
-from models.resnet import resnet18
-import torch.nn as nn
-from utils.utils import find_class_by_name, adjust_weight
-
 # Training settings
-parser = argparse.ArgumentParser(description='PyTorch MNIST bags Example')
+parser = argparse.ArgumentParser(description='PyTorch HISMIL')
 # optimizer
 parser.add_argument('--epochs', type=int, default=200, metavar='N',
                     help='number of epochs to train (default: 20)')
@@ -77,10 +67,15 @@ parser.add_argument('--momentum', type=float, default=0.999,
                     help='momentum used in MOCO')                    
 parser.add_argument('--ema', type=float, default=0.99, metavar='EMA',
                     help='exponential moving average')
+#memory bank
+parser.add_argument('--mb_dim', default=128, type=int,
+                    help='feature dimension (default: 128)')
+parser.add_argument('--mb-t', default=0.07, type=float,
+                    help='softmax temperature (default: 0.07)')
 # loss weight
-parser.add_argument('--weight_self', type=float, default=0.1)
+parser.add_argument('--weight_self', type=float, default=1)
 parser.add_argument('--weight_mse', type=float, default=0)
-parser.add_argument('--weight_l1', type=float, default=0)
+parser.add_argument('--weight_bag', type=float, default=0)
 # Data and logging
 parser.add_argument('--ratio', type=float, default=0.8,
                     help='the ratio of train dataset')
@@ -91,14 +86,14 @@ parser.add_argument('--data_dir', type=str, default='/media/walkingwind/Transcen
                          'remote: /remote-home/my/datasets/BASH')
 parser.add_argument('--log_dir', default='./experiments', type=str,
                     help='path to moco pretrained checkpoint')
-parser.add_argument('--config', type=str, default='./config/imagenet_ir.json',
+parser.add_argument('--config', type=str, default='./config/imagenet_la.json',
                         help='path to config file')
 
 args = parser.parse_args()
 config = process_config(args.config)
 
 torch.manual_seed(args.seed)
-
+cudnn.benchmark = True
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
     print('\nGPU is ON!')
@@ -123,20 +118,30 @@ aug_train = [
             # transforms.RandomGrayscale(p=0.2),
             # transforms.RandomApply([GaussianBlur([.1, 2.])], p=0.5),
             # transforms.RandomHorizontalFlip(),
-            #aug
-            transforms.RandomResizedCrop(224, scale=(0.2, 1.)),
-            transforms.RandomGrayscale(p=0.2),
-            transforms.ColorJitter(0.4, 0.4, 0.4, 0.4),
-            transforms.RandomHorizontalFlip(),
+            #aug Moco v1's aug
+            # transforms.RandomResizedCrop(224, scale=(0.2, 1.)),
+            # # transforms.RandomGrayscale(p=0.2),
+            # # transforms.ColorJitter(0.4, 0.4, 0.4, 0.4),
+            # transforms.RandomHorizontalFlip(),
             #lincls
             # transforms.RandomResizedCrop(224),
             # transforms.RandomHorizontalFlip(),
 
+            # transforms.ToTensor(),
+            # transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])]
+
+            #aug Moco v2's aug
+            transforms.RandomResizedCrop(224, scale=(0.2, 1.)),
+            transforms.RandomApply([
+                transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)  # not strengthened
+            ], p=0.8),
+            transforms.RandomGrayscale(p=0.2),
+            transforms.RandomApply([GaussianBlur([.1, 2.])], p=0.5),
+            transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225])]
-aug_test = [transforms.Resize((256, 256)),
-            transforms.CenterCrop((224, 224)),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])]
+
+aug_test = [transforms.Resize((224, 224)),
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]
 
@@ -166,14 +171,11 @@ test_loader = data_utils.DataLoader(test_dataset,
 #                                     **loader_kwargs)
 print('Init Model')
 
-
-
-
 # memory bank
 if args.weight_self != 0:
     data_len = len(train_dataset)*48 #WSIs * patches
-    memory_bank = MemoryBank(data_len,  config.model_params.out_dim, config.gpu_device) #128D, gpu-id=0
-# init self-module
+    memory_bank = MemoryBank(data_len, args.mb_dim, config.gpu_device) #128D, gpu-id=0
+    # init self-module
     if config.loss_params.loss == 'LocalAggregationLossModule':
         # init cluster
         cluster_labels = _init_cluster_labels(config, data_len)
@@ -186,7 +188,9 @@ if args.weight_self != 0:
            config.loss_params.kmeans_freq = (
                     len(train_loader) )
     elif config.loss_params.loss == 'MocoLossModule':
-        Ins_Module = MocoLossModule(memory_bank.bank_broadcast)
+        Ins_Module = MocoLossModule(memory_bank.bank_broadcast, 
+                         k=config.loss_params.k,
+                         t=config.loss_params.t)
     else:
         Ins_Module = InstanceDiscriminationLossModule(memory_bank.bank_broadcast,
                          cluster_labels_broadcast=None,
@@ -195,49 +199,19 @@ if args.weight_self != 0:
                          m=config.loss_params.m)
 
 # choose agg model
-
 attention = find_class_by_name(args.attention, [FeaAgg])
 graph = find_class_by_name(args.graph, [FeaAgg])
-consistent =  (args.weight_mse != 0) | (args.weight_l1 != 0)
+# consistent = (args.weight_mse != 0) | (args.weight_bag != 0)
+bag_label = torch.stack(([torch.tensor(i[1]) for i in train_dataset.folder])).cuda()
 model = GraphCon(args.agg_mode,
                  ResBackbone, args.arch, args.pretrained,
                  AggNet, attention, graph, args.n_topk,
-                 ema=args.ema,
-                 momentum = args.momentum,
-                 consistent=consistent)
-
+                 m=args.ema, T=args.mb_t, dim=args.mb_dim, K=len(train_dataset),
+                 bag_label=bag_label)
 if args.cuda:
     model.cuda()
-
-# if args.pretrained:
-#     if os.path.isfile(args.pretrained):
-#         print("=> loading checkpoint '{}'".format(args.pretrained))
-#         checkpoint = torch.load(args.pretrained, map_location="cpu")
-#
-#         # rename moco pre-trained keys
-#         state_dict = checkpoint['state_dict']
-#         # for k in list(state_dict.keys()):
-#         #     # retain only encoder_q up to before the embedding layer
-#         #     if k.startswith('module.encoder_q') and not k.startswith('module.encoder_q.fc'):
-#         #         # remove prefix
-#         #         state_dict[k[len("module.encoder_q."):]] = state_dict[k]
-#         #     # delete renamed or unused k
-#         #     del state_dict[k]
-#         for k in list(state_dict.keys()):
-#             if k.startswith('attention') or k.startswith('classifier'):
-#                 del state_dict[k]
-#
-#
-#         args.start_epoch = 0
-#         msg = model1.load_state_dict(state_dict, strict=False)
-#         if msg.missing_keys:
-#             print(msg.missing_keys)
-#         print("=> loaded pre-trained model '{}'".format(args.pretrained))
-#     else:
-#         print("=> no checkpoint found at '{}'".format(args.pretrained))
-#
-# parameters = list(filter(lambda p: p.requires_grad, model2.parameters()))
 print(model)
+
 parameters = [{'params': model.parameters()}]
 optimizer = optim.Adam(parameters, lr=args.lr, betas=(0.9, 0.999), weight_decay=args.reg)
 
@@ -251,60 +225,51 @@ def train_multi_batch(epoch):
     CE_loss = 0.
     INS_loss = 0.
     MSE_loss = 0.
-    L1_loss = 0.
+    BagInfo_loss = 0.
     preds_list = []
     gt_list = []
-    adjusted_weight = adjust_weight(args.weight_mse, epoch, args)
-    for batch_idx, (idx, data, label, batch) in enumerate(tqdm(train_loader)):
+    # adjusted_weight = adjust_weight(args.weight_mse, epoch, args)
+    for batch_idx, (bag_idx, ins_idx, data, label, batch) in enumerate(tqdm(train_loader)):
         bag_label = label
         img_q = data[0]
         img_k = data[1]
-        idx = idx.squeeze(0)
-        # print(idx)
         if args.cuda:
-            img_k, img_q, bag_label, idx, batch = img_k.cuda(), img_q.cuda(), bag_label.cuda(), idx.cuda(), batch.cuda()
-
+            img_k, img_q, bag_label = img_k.cuda(non_blocking=True), img_q.cuda(non_blocking=True), bag_label.cuda(non_blocking=True)
+            bag_idx, ins_idx, batch = bag_idx.cuda(non_blocking=True), ins_idx.cuda(non_blocking=True), batch.cuda(non_blocking=True)
         # reset gradients
         optimizer.zero_grad()
+        # forward
+        Y_prob_q, (logits, labels), (self_fea_q, self_fea_k), (Attention_q, Attention_k), (Affinity_q, Affinity_k)\
+            = model(img_q, img_k, batch, bag_idx, bag_label) ##preds: [N] , gt： [N]
         # calculate loss and metrics
-        Y_prob_q, self_feat_q, Attention_q, Affinity_q, (Ga_q, Gg_q, G_q) = model(img_q, batch=batch) ##preds: [N] , gt： [N]
-        if args.weight_self != 0:
-            self_feat_k = model.self_supervised_forward(img_k)
-        # compute logits
-        # loss, new_data_memory = Ins_Module.forward(idx, self_feat_q, self_feat_k, config.gpu_device)
-        if consistent:
-            _, _, Attention_k, Affinity_k, (Ga_k, Gg_k, G_k) = model.consistent_forward(img_k, batch=batch)
         ce_loss = criterion_ce(Y_prob_q, bag_label)
+        total_loss = ce_loss
         CE_loss += ce_loss.item()
-        loss = ce_loss
+        if args.weight_bag != 0:
+            baginfo_loss = criterion_ce(logits, labels)
+            BagInfo_loss += baginfo_loss.item()
+            total_loss = total_loss + args.weight_bag * baginfo_loss
         if args.weight_mse != 0:
             mse_loss = criterion_mse(Affinity_q, Affinity_k)/data[0].shape[0]
             MSE_loss += mse_loss.item()
-            loss += adjusted_weight * mse_loss
-        if args.weight_l1 != 0:
-            #TODO; attention_feature/graph_feature/concat feature
-            l1_loss = criterion_l1(Gg_q, Gg_k)
-            loss += args.weight_l1 * l1_loss
+            total_loss = total_loss + args.weight_mse * mse_loss
         if args.weight_self != 0:
             ins_loss, new_data_memory = Ins_Module(
-                idx, self_feat_q, self_feat_k, torch.arange(len(config.gpu_device)))
+                ins_idx, self_fea_q, torch.arange(len(config.gpu_device)))
             INS_loss += ins_loss.item()
-            loss += args.weight_self * ins_loss
+            total_loss = total_loss + args.weight_self * ins_loss
 
-        # print info
-        train_loss += loss.item()
-
+        train_loss += total_loss.item()
         preds_list.extend([torch.argmax(Y_prob_q, dim=1)[i].item() for i in range(Y_prob_q.shape[0])])
         gt_list.extend([bag_label[i].item() for i in range(bag_label.shape[0])])
-
         # backward pass
-        loss.backward()
+        total_loss.backward()
         # step
         optimizer.step()
         #update memo and cluster
         if args.weight_self != 0:
             with torch.no_grad():
-                memory_bank.update(idx, new_data_memory)
+                memory_bank.update(ins_idx, new_data_memory)
                 Ins_Module.memory_bank_broadcast = memory_bank.bank_broadcast  # update loss_fn
                 if (config.loss_params.loss == 'LocalAggregationLossModule' and
                         (Ins_Module.first_iteration_kmeans or batch_idx == (config.loss_params.kmeans_freq-1))):
@@ -313,7 +278,6 @@ def train_multi_batch(epoch):
                         # get kmeans clustering (update our saved clustering)
                     k = [config.loss_params.kmeans_k for _ in
                          range(config.loss_params.n_kmeans)]
-
                     # NOTE: we use a different gpu for FAISS otherwise cannot fit onto memory
                     km = Kmeans(k, memory_bank, gpu_device=config.gpu_device)
                     cluster_labels = km.compute_clusters()
@@ -328,11 +292,11 @@ def train_multi_batch(epoch):
     CE_loss /= len(train_loader)
     INS_loss /= len(train_loader)
     MSE_loss /= len(train_loader)
-    L1_loss /= len(train_loader)
+    BagInfo_loss /= len(train_loader)
     train_loss /= len(train_loader)
     logger.log_string('====================Train')
-    logger.log_string('Epoch: {}, ceLoss: {:.4f}, insLoss: {:.4f}, MseLoss: {:.4f}, L1Loss: {:.4f},Train loss: {:.4f}'
-                      .format(epoch, CE_loss, INS_loss, MSE_loss, L1_loss, train_loss))
+    logger.log_string('Epoch: {}, ceLoss: {:.4f}, insLoss: {:.4f}, MseLoss: {:.4f}, BagLoss: {:.4f},Train loss: {:.4f}'
+                      .format(epoch, CE_loss, INS_loss, MSE_loss, BagInfo_loss, train_loss))
     cal_metrics(preds_list, gt_list, args, logger, epoch, 'train')
     # if epoch == args.epochs-1:
     #     torch.save({'state_dict': model1.state_dict()}, 'checkpoint_{:04d}.pth.tar'.format(epoch))
@@ -344,13 +308,13 @@ def test(epoch):
     preds_list = []
     gt_list = []
     with torch.no_grad():
-        for batch_idx, (_, data, label, batch) in enumerate(tqdm(test_loader)):
+        for batch_idx, (_, _, data, label, batch) in enumerate(tqdm(test_loader)):
             bag_label = label
             img_k = data[0]
             img_q = data[1]
             if args.cuda:
                 img_k, img_q, bag_label, batch = img_k.cuda(), img_q.cuda(), bag_label.cuda(), batch.cuda()
-            preds, _, _, _, _= model(img_k, batch=batch)
+            preds = model(img_k, None, batch=batch,  bag_idx=None, label=None)
             preds_list.extend([torch.argmax(preds, dim=1)[i].item() for i in range(preds.shape[0])])
             gt_list.extend([bag_label[i].item() for i in range(bag_label.shape[0])])
 

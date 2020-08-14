@@ -3,15 +3,20 @@ import torch.nn as nn
 class GraphCon(nn.Module):
     def __init__(self, mode, base_encoder, arch, pretrained,
                  base_agg, attention, graph, n_topk,
-                 ema, momentum, consistent):
+                 m, T,
+                 dim, K, bag_label):
         super(GraphCon, self).__init__()
         self.encoder_q = base_encoder(arch, pretrained)
         self.agg_q = base_agg(attention, graph, n_topk, mode)
-        self.momentum = momentum
-        if consistent:
-            self.encoder_k = base_encoder(arch, pretrained)
-            self.agg_k = base_agg(attention, graph, n_topk, mode)
-            self.ema = ema
+        self.encoder_k = base_encoder(arch, pretrained)
+        self.agg_k = base_agg(attention, graph, n_topk, mode)
+
+        self.ema = m
+        self.T = T
+        self.bag_label = bag_label
+        # create the queue
+        self.register_buffer("bag_feature", torch.randn(dim, K))
+        self.bag_feature = nn.functional.normalize(self.bag_feature, dim=0)
 
     @torch.no_grad()
     def _momentum_update_key_backbone_and_agg(self):
@@ -23,11 +28,11 @@ class GraphCon(nn.Module):
         for param_q, param_k in zip(self.agg_q.parameters(), self.agg_k.parameters()):
             param_k.data = param_k.data * self.ema + param_q.data * (1. - self.ema)
 
-    @torch.no_grad()
-    def _momentum_update_key_backbone(self):
+    # @torch.no_grad()
+    # def _momentum_update_key_backbone(self):
 
-        for param_q, param_k in zip(self.encoder_q.parameters(), self.encoder_k.parameters()):
-            param_k.data = param_k.data * self.momentum + param_q.data * (1. - self.momentum)
+    #     for param_q, param_k in zip(self.encoder_q.parameters(), self.encoder_k.parameters()):
+    #         param_k.data = param_k.data * self.momentum + param_q.data * (1. - self.momentum)
     
     @torch.no_grad()
     def _batch_shuffle(self, x):
@@ -49,39 +54,67 @@ class GraphCon(nn.Module):
 
 
     @torch.no_grad()
-    def _batch_unshuffle(self, x, idx_unshuffle):
+    def _batch_unshuffle(self, x1, x2, idx_unshuffle):
         """
         Undo batch shuffle.
         """
-        return x[idx_unshuffle] 
+        return x1[idx_unshuffle], x2[idx_unshuffle]
 
-    def forward(self, im_q, batch):
-        fea_q, self_feat_q = self.encoder_q(im_q)
-        self_feat_q = torch.nn.functional.normalize(self_feat_q, dim=1)
-        Y_prob_q, Attention_q, Affinity_q, (Ga_q, Gg_q, G_q) = self.agg_q(fea_q, batch)
-        return Y_prob_q, self_feat_q, Attention_q, Affinity_q, (Ga_q, Gg_q, G_q)
-
-    def consistent_forward(self, im_k, batch):
+    def forward(self, im_q, im_k, batch, bag_idx, label):
+        fea_q, self_fea_q = self.encoder_q(im_q)
+        Y_prob_q, Attention_q, Affinity_q, bag_feature_q = self.agg_q(fea_q, batch)
+        q = nn.functional.normalize(bag_feature_q, dim=1)
+        if im_k is None:
+            return Y_prob_q
         with torch.no_grad():
             self._momentum_update_key_backbone_and_agg()
-            fea_k, self_feat_k = self.encoder_k(im_k)
-            _, Attention_k, Affinity_k, (Ga_k, Gg_k, G_k) = self.agg_q(fea_k, batch)
-        return None, self_feat_k, Attention_k, Affinity_k, (Ga_k, Gg_k, G_k)
-
-    def self_supervised_forward(self, self_im_k):
-        with torch.no_grad():
-            self._momentum_update_key_backbone()
             # shuffle for making use of BN
-            self_im_k_first, self_im_k_last, idx_unshuffle_first, idx_unshuffle_last = self._batch_shuffle(self_im_k)
-            self_feat_k_first = self.encoder_k(self_im_k_first)
-            self_feat_k_first = torch.nn.functional.normalize(self_feat_k_first, dim=1)
-            self_feat_k_last = self.encoder_k(self_im_k_last)
-            self_feat_k_last = torch.nn.functional.normalize(self_feat_k_last, dim=1)
+            im_k_first, im_k_last, idx_unshuffle_first, idx_unshuffle_last = self._batch_shuffle(im_k)
+            feat_k_first, self_feat_k_first = self.encoder_k(im_k_first)
+            feat_k_last, self_feat_k_last = self.encoder_k(im_k_last)
             # undo shuffle
-            self_feat_k_first = self._batch_unshuffle(self_feat_k_first, idx_unshuffle_first)
-            self_feat_k_last = self._batch_unshuffle(self_feat_k_last, idx_unshuffle_last)
-            self_feat_k = torch.cat((self_feat_k_first, self_feat_k_last), 0)
-        return self_feat_k
+            feat_k_first, self_feat_k_first = self._batch_unshuffle(feat_k_first, self_feat_k_first, idx_unshuffle_first)
+            feat_k_last , self_feat_k_last  = self._batch_unshuffle(feat_k_last, self_feat_k_last, idx_unshuffle_last)
+            fea_k = torch.cat((feat_k_first, feat_k_last), 0)
+            self_fea_k = torch.cat((self_feat_k_first, self_feat_k_last), 0)
+            # fea_k, self_fea_k = self.encoder_k(im_k)
+            _, Attention_k, Affinity_k, bag_feature_k = self.agg_q(fea_k, batch)
+            k = nn.functional.normalize(bag_feature_k, dim=1)
+        l_pos = torch.einsum('nc,nc->n', [q, k]).unsqueeze(-1)
+        # negative logits: NxK
+        l_neg = torch.einsum('nc,ck->nk', [q, self.bag_feature.clone().detach()])
+        mask = torch.eq(*torch.meshgrid(label, self.bag_label)).long()
+        l_neg = l_neg.masked_fill(mask == 1, -1e9)
+
+        # logits: Nx(1+K)
+        logits = torch.cat([l_pos, l_neg], dim=1)
+
+        # apply temperature
+        logits /= self.T
+        labels = torch.zeros(logits.shape[0], dtype=torch.long).cuda()
+        self._updata_bag_feature(q, bag_idx)
+        # predictions, self_fea [N, 128], (bag logits, labels) for contrastive, attention weights, affinity weights
+        # Here the bag logits are calculated on the attention weighted bag feature
+        return Y_prob_q, (logits, labels), (self_fea_q, self_fea_k), (Attention_q, Attention_k), (Affinity_q, Affinity_k)
+
+    def _updata_bag_feature(self, feature, bag_idx):
+        self.bag_feature[:, bag_idx] = feature.T
+
+
+    # def self_supervised_forward(self, self_im_k):
+    #     with torch.no_grad():
+    #         self._momentum_update_key_backbone()
+    #         # shuffle for making use of BN
+    #         self_im_k_first, self_im_k_last, idx_unshuffle_first, idx_unshuffle_last = self._batch_shuffle(self_im_k)
+    #         self_feat_k_first = self.encoder_k(self_im_k_first)
+    #         self_feat_k_first = torch.nn.functional.normalize(self_feat_k_first, dim=1)
+    #         self_feat_k_last = self.encoder_k(self_im_k_last)
+    #         self_feat_k_last = torch.nn.functional.normalize(self_feat_k_last, dim=1)
+    #         # undo shuffle
+    #         self_feat_k_first = self._batch_unshuffle(self_feat_k_first, idx_unshuffle_first)
+    #         self_feat_k_last = self._batch_unshuffle(self_feat_k_last, idx_unshuffle_last)
+    #         self_feat_k = torch.cat((self_feat_k_first, self_feat_k_last), 0)
+    #     return self_feat_k
 
 if __name__ =='__main__':
     from Builder.FeaAgg import ResBackbone

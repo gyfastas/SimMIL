@@ -1,6 +1,6 @@
 
 {
-    "exp_base": "/remote-home/my/experiment/GraphMIL/experiments_data",
+    "exp_base": "./experiments_data",
     "debug": false,
     "exp_name": "imagenet_ir",
     "exp_id": "res18_IR",
@@ -17,6 +17,6 @@
         "t": 0.07,
         "m": 0.5,
         "kmeans_freq": null,
-        "loss": "InstanceDiscriminationLossModule"
+        "loss": "LocalAggregationLossModule"
     }
 }

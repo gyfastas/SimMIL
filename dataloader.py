@@ -148,16 +148,17 @@ class HISMIL_DoubleAug(ImageFolder):
         return chosen_list
 
     def collate_fn(self, batch):
-        idx_lists = [x[0] for x in batch]
+        bag_idx_lists = [x[0][0] for x in batch]
+        ins_idx_lists = [x[0][1] for x in batch]
         bag_lists1 = [x[1][0] for x in batch]
         bag_lists2 = [x[1][1] for x in batch]
         targets = [x[2] for x in batch]
         batches = []
         for i in range(len(batch)):
-            batches.extend([i] * len(idx_lists[i]))
+            batches.extend([i] * len(ins_idx_lists[i]))
 
         batches = torch.tensor(batches).long()
-        return torch.cat(idx_lists), (torch.cat(bag_lists1), torch.cat(bag_lists2)), torch.cat(targets), batches
+        return torch.cat(bag_idx_lists), torch.cat(ins_idx_lists), (torch.cat(bag_lists1), torch.cat(bag_lists2)), torch.cat(targets), batches
 
     def __getitem__(self, index):
         path, target = self.folder[index]
@@ -171,7 +172,7 @@ class HISMIL_DoubleAug(ImageFolder):
         x_idx, y_idx = dz.level_tiles[dz.level_count - 1]
         bag_list1 = torch.tensor([])
         bag_list2 = torch.tensor([])
-        idx_list = torch.tensor([]).long()
+        ins_idx_list = torch.tensor([]).long()
         cnt = 0
         idx_init = index * x_idx * y_idx
         for i in range(x_idx):
@@ -184,10 +185,10 @@ class HISMIL_DoubleAug(ImageFolder):
                 if self.target_transform is not None:
                     target = self.target_transform(target)
                 bag_list1 = torch.cat((bag_list1, sample[0].unsqueeze(0)))
-                bag_list2 = torch.cat((bag_list2, sample[1] .unsqueeze(0)))
-                idx_list = torch.cat((idx_list, torch.tensor([idx])))
+                bag_list2 = torch.cat((bag_list2, sample[1].unsqueeze(0)))
+                ins_idx_list = torch.cat((ins_idx_list, torch.tensor([idx])))
         # batch_idx = torch.ones_like(idx_list)*index
-        return idx_list, (bag_list1, bag_list2), torch.tensor([target]).long()
+        return (torch.tensor([index]), ins_idx_list), (bag_list1, bag_list2), torch.tensor([target]).long()
 
     def __len__(self):
         return len(self.folder)
