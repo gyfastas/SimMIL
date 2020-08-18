@@ -20,7 +20,7 @@ from MemoryBank.memorybank import MemoryBank, InstanceDiscriminationLossModule, 
 from MemoryBank.mb_utils import _init_cluster_labels
 from utils.utils import TwoCropsTransform, GaussianBlur
 from utils.setup import process_config
-from utils.utils import fix_bn, GaussianBlur, adjust_learning_rate, print_args, cal_metrics
+from utils.utils import fix_bn, adjust_learning_rate, print_args, cal_metrics
 import torch.nn as nn
 from utils.utils import find_class_by_name, adjust_weight
 
@@ -33,7 +33,7 @@ parser = argparse.ArgumentParser(description='PyTorch HISMIL')
 # optimizer
 parser.add_argument('--epochs', type=int, default=200, metavar='N',
                     help='number of epochs to train (default: 20)')
-parser.add_argument('--lr', type=float, default=0.00001, metavar='LR',
+parser.add_argument('--lr', type=float, default=3e-4, metavar='LR',
                     help='learning rate (default: 0.0005)')
 parser.add_argument('--reg', type=float, default=0, metavar='R',
                     help='weight decay')
@@ -48,7 +48,7 @@ parser.add_argument('--cos', action='store_true', default=True,
 parser.add_argument('--schedule', default=[120, 160], nargs='*', type=int,
                     help='learning rate schedule (when to drop lr by 10x)')
 #############################################################
-parser.add_argument('--pretrained', action='store_true', default=True,
+parser.add_argument('--pretrained', action='store_true', default=False,
                     help='imagenet_pretrained and fix_bn to aviod shortcut')
 parser.add_argument('-a', '--arch', metavar='ARCH', default='resnet18',
                     choices=model_names,
@@ -75,18 +75,18 @@ parser.add_argument('--mb-t', default=0.07, type=float,
 # loss weight
 parser.add_argument('--weight_self', type=float, default=1)
 parser.add_argument('--weight_mse', type=float, default=0)
-parser.add_argument('--weight_bag', type=float, default=0)
+parser.add_argument('--weight_bag', type=float, default=1)
 # Data and logging
 parser.add_argument('--ratio', type=float, default=0.8,
                     help='the ratio of train dataset')
 parser.add_argument('--folder', type=int, default=0,
                     help='CV folder')
-parser.add_argument('--data_dir', type=str, default='/media/walkingwind/Transcend',
+parser.add_argument('--data_dir', type=str, default='/remote-home/source/DATA',
                     help='local: /media/walkingwind/Transcend'
-                         'remote: /remote-home/my/datasets/BASH')
+                         'remote: /remote-home/source/DATA')
 parser.add_argument('--log_dir', default='./experiments', type=str,
                     help='path to moco pretrained checkpoint')
-parser.add_argument('--config', type=str, default='./config/imagenet_la.json',
+parser.add_argument('--config', type=str, default='./config/imagenet_byol.json',
                         help='path to config file')
 
 args = parser.parse_args()
@@ -172,7 +172,8 @@ test_loader = data_utils.DataLoader(test_dataset,
 print('Init Model')
 
 # memory bank
-if args.weight_self != 0:
+BYOL_flag=False
+if args.weight_self != 0 and config.loss_params.loss != 'BYOLModule':
     data_len = len(train_dataset)*48 #WSIs * patches
     memory_bank = MemoryBank(data_len, args.mb_dim, config.gpu_device) #128D, gpu-id=0
     # init self-module
@@ -197,6 +198,8 @@ if args.weight_self != 0:
                          k=config.loss_params.k,
                          t=config.loss_params.t,
                          m=config.loss_params.m)
+elif args.weight_self != 0 and config.loss_params.loss == 'BYOLModule':
+    BYOL_flag=True
 
 # choose agg model
 attention = find_class_by_name(args.attention, [FeaAgg])
@@ -206,8 +209,8 @@ bag_label = torch.stack(([torch.tensor(i[1]) for i in train_dataset.folder])).cu
 model = GraphCon(args.agg_mode,
                  ResBackbone, args.arch, args.pretrained,
                  AggNet, attention, graph, args.n_topk,
-                 m=args.ema, T=args.mb_t, dim=args.mb_dim, K=len(train_dataset),
-                 bag_label=bag_label)
+                 m=args.ema, T=args.mb_t, dim=args.mb_dim, K=len(train_dataset), bag_label=bag_label, 
+                 BYOL_flag=BYOL_flag, BYOL_size=config.projection_size, BYOL_hidden_size=config.projection_hidden_size)
 if args.cuda:
     model.cuda()
 print(model)
@@ -239,8 +242,12 @@ def train_multi_batch(epoch):
         # reset gradients
         optimizer.zero_grad()
         # forward
-        Y_prob_q, (logits, labels), (self_fea_q, self_fea_k), (Attention_q, Attention_k), (Affinity_q, Affinity_k)\
-            = model(img_q, img_k, batch, bag_idx, bag_label) ##preds: [N] , gt： [N]
+        if BYOL_flag == True:
+            Y_prob_q, ins_loss, (logits, labels), (self_fea_q, self_fea_k), (Attention_q, Attention_k), (Affinity_q, Affinity_k)\
+                = model(img_q, img_k, batch, bag_idx, bag_label)
+        else:
+            Y_prob_q, (logits, labels), (self_fea_q, self_fea_k), (Attention_q, Attention_k), (Affinity_q, Affinity_k)\
+                = model(img_q, img_k, batch, bag_idx, bag_label) ##preds: [N] , gt： [N]
         # calculate loss and metrics
         ce_loss = criterion_ce(Y_prob_q, bag_label)
         total_loss = ce_loss
@@ -253,9 +260,14 @@ def train_multi_batch(epoch):
             mse_loss = criterion_mse(Affinity_q, Affinity_k)/data[0].shape[0]
             MSE_loss += mse_loss.item()
             total_loss = total_loss + args.weight_mse * mse_loss
-        if args.weight_self != 0:
-            ins_loss, new_data_memory = Ins_Module(
-                ins_idx, self_fea_q, torch.arange(len(config.gpu_device)))
+        if args.weight_self != 0 and BYOL_flag == False:
+            # ins_loss, new_data_memory = Ins_Module(
+                # ins_idx, self_fea_q, torch.arange(len(config.gpu_device)))
+            # BYOL module
+            ins_loss = Ins_Module(self_fea_q, self_fea_k)
+            INS_loss += ins_loss.item()
+            total_loss = total_loss + args.weight_self * ins_loss
+        if args.weight_self != 0 and BYOL_flag == True:
             INS_loss += ins_loss.item()
             total_loss = total_loss + args.weight_self * ins_loss
 
@@ -267,7 +279,7 @@ def train_multi_batch(epoch):
         # step
         optimizer.step()
         #update memo and cluster
-        if args.weight_self != 0:
+        if args.weight_self != 0 and BYOL_flag == False:
             with torch.no_grad():
                 memory_bank.update(ins_idx, new_data_memory)
                 Ins_Module.memory_bank_broadcast = memory_bank.bank_broadcast  # update loss_fn

@@ -10,6 +10,9 @@ import numpy as np
 import math
 
 from torch import nn
+from torchvision import transforms
+from torchvision.transforms.transforms import RandomResizedCrop
+from utils.utils import GaussianBlur
 import MemoryBank.mb_utils as utils
 
 DEFAULT_KMEANS_SEED = 1234

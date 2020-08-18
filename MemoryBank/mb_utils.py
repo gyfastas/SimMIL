@@ -113,3 +113,6 @@ def _init_cluster_labels(config, data_len):
     cluster_labels = cluster_labels.unsqueeze(0).repeat(no_kmeans_k, 1)
     broadcast_cluster_labels = torch.cuda.comm.broadcast(cluster_labels, config.gpu_device)
     return broadcast_cluster_labels
+
+def default(val, def_val):
+    return def_val if val is None else val

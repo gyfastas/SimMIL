@@ -63,12 +63,14 @@ class AggNet(nn.Module):
 
 
     def forward(self, H, batch):
-        H = self.fc(H)
+        if H.shape[1] != 128:
+            H = self.fc(H)
         bag_feature_attention, attention_weights = self.multi_batch_attention(H, batch)
         bag_feature_graph, Affinity = self.graph(H, batch)
         if self.model == 'attention':
-            Y_prob = self.classifier(bag_feature_attention)
-            return Y_prob, attention_weights, Affinity, bag_feature_attention
+            Y_prob_bag = self.classifier(bag_feature_attention)
+            # Y_prob_ins = self.classifier(H)
+            return Y_prob_bag, attention_weights, Affinity, bag_feature_attention
         elif self.model == 'graph':
             Y_prob = self.classifier(bag_feature_graph)
             return Y_prob, attention_weights, Affinity, bag_feature_graph

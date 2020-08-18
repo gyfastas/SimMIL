@@ -17,7 +17,7 @@
         "t": 0.07,
         "m": 0.5,
         "kmeans_k": 200,
-        "n_kmeans": 10,
+        "n_kmeans": 3,
         "kmeans_freq": null,
         "loss": "LocalAggregationLossModule"
     }
