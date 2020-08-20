@@ -1,5 +1,6 @@
 from functools import wraps
 import copy
+# from main_graphcon import bag_label
 
 import torch
 import torch.nn as nn
@@ -80,6 +81,7 @@ class GraphCon(nn.Module):
         # create the queue
         self.register_buffer("bag_feature", torch.randn(dim, K))
         self.bag_feature = nn.functional.normalize(self.bag_feature, dim=0)
+        self.classifier = nn.Linear(128, 4)
 
     @torch.no_grad()
     def _momentum_update_key_backbone_and_agg(self):
@@ -139,28 +141,53 @@ class GraphCon(nn.Module):
     def forward(self, im_q, im_k, batch, bag_idx, label):
 
         if(self.flag==True):
-            fea_q = self.encoder_q(im_q)
-            Y_prob_q, Attention_q, Affinity_q, bag_feature_q = self.agg_q(fea_q, batch)
-            if im_k is None:
-                return Y_prob_q
-            fea_k = self.encoder_q(im_k)
 
-            self_fea_q=None 
+            self_fea_q=None # do not need it
             self_fea_k=None
 
+            fea_q = self.encoder_q(im_q) #one
             online_pred_one = self.predictor_q(fea_q)
+            Y_prob_q, Attention_q, Affinity_q, bag_feature_q = self.agg_q(online_pred_one, batch)
+            online_prob_one = self.classifier(online_pred_one)
+            # Y_prob_q_sf = torch.softmax(Y_prob_q/0.07, dim=1)
+            # Y_prob_q_sf =Y_prob_q
+            q = nn.functional.normalize(bag_feature_q, dim=1)
+
+            if im_k is None:
+                return Y_prob_q
+            
+            fea_k = self.encoder_q(im_k) #two
             online_pred_two = self.predictor_q(fea_k)
+            online_prob_two = self.classifier(online_pred_two)
 
             with torch.no_grad():
                 target_encoder = self._get_target_encoder()
-                target_proj_one = target_encoder(im_q)
-                target_proj_two = target_encoder(im_k)
+                # shuffle for making use of BN
+                im_k_first, im_k_last, idx_unshuffle_first, idx_unshuffle_last = self._batch_shuffle(im_k)
+                im_q_first, im_q_last, idx_unshuffle_first_q, idx_unshuffle_last_q = self._batch_shuffle(im_q)
+                target_proj_one_first = target_encoder(im_k_first)
+                target_proj_one_last  = target_encoder(im_k_last)
+                target_proj_two_first = target_encoder(im_q_first)
+                target_proj_two_last  = target_encoder(im_q_last)
+                # undo shuffle
+                target_proj_one_first, _ = self._batch_unshuffle(target_proj_one_first, target_proj_one_first, idx_unshuffle_first)
+                target_proj_one_last , _ = self._batch_unshuffle(target_proj_one_last, target_proj_one_last, idx_unshuffle_last)
+                target_proj_one = torch.cat((target_proj_one_first, target_proj_one_last), 0)
+                target_proj_two_first, _ = self._batch_unshuffle(target_proj_two_first, target_proj_two_first, idx_unshuffle_first_q)
+                target_proj_two_last , _ = self._batch_unshuffle(target_proj_two_last, target_proj_two_last, idx_unshuffle_last_q)
+                target_proj_two = torch.cat((target_proj_two_first, target_proj_two_last), 0)
+                # self_fea_k = torch.cat((self_feat_k_first, self_feat_k_last), 0)
+
+            # with torch.no_grad():
+            #     target_proj_one = target_encoder(im_q)
+            #     target_proj_two = target_encoder(im_k)
+
             # ins_loss
-            loss_one = self._loss_fn(online_pred_one, target_proj_two.detach())
-            loss_two = self._loss_fn(online_pred_two, target_proj_one.detach())
+            loss_one = self._loss_fn(online_pred_one, target_proj_one.detach())
+            loss_two = self._loss_fn(online_pred_two, target_proj_two.detach())
             ins_loss = (loss_one + loss_two).mean()
             
-            q = nn.functional.normalize(bag_feature_q, dim=1)
+            
             with torch.no_grad():
                 self._momentum_update_key_backbone_and_agg()
                 # shuffle for making use of BN
@@ -172,8 +199,11 @@ class GraphCon(nn.Module):
                 # feat_k_last , self_feat_k_last  = self._batch_unshuffle(feat_k_last, self_feat_k_last, idx_unshuffle_last)
                 # fea_k = torch.cat((feat_k_first, feat_k_last), 0)
                 # self_fea_k = torch.cat((self_feat_k_first, self_feat_k_last), 0)
+
                 # fea_k, self_fea_k = self.encoder_k(im_k)
-                _, Attention_k, Affinity_k, bag_feature_k = self.agg_k(target_proj_two, batch)
+                Y_prob_k, Attention_k, Affinity_k, bag_feature_k = self.agg_k(target_proj_one, batch)
+                # Y_prob_k_sf = torch.softmax(Y_prob_k/0.07, dim=1)
+                # Y_prob_k_sf = Y_prob_k
                 k = nn.functional.normalize(bag_feature_k, dim=1)
             l_pos = torch.einsum('nc,nc->n', [q, k]).unsqueeze(-1)
             # negative logits: NxK
@@ -186,11 +216,20 @@ class GraphCon(nn.Module):
 
             # apply temperature
             logits /= self.T
-            labels = torch.zeros(logits.shape[0], dtype=torch.long).cuda()
+            # labels = torch.zeros(logits.shape[0], dtype=torch.long).cuda()
+            labels=[]
+            for i in label:
+                labels.extend([i.item()] * 48)
+            labels = torch.tensor(labels).long().cuda()
+
             self._updata_bag_feature(q, bag_idx)
+
+            # print(torch.mean(Attention_q,dim=0))
+            # print(torch.max(Attention_q, dim=0))
+
             # predictions, self_fea [N, 128], (bag logits, labels) for contrastive, attention weights, affinity weights
             # Here the bag logits are calculated on the attention weighted bag feature
-            return Y_prob_q, ins_loss, (logits, labels), (self_fea_q, self_fea_k), (Attention_q, Attention_k), (Affinity_q, Affinity_k)
+            return Y_prob_q, (online_prob_one, online_prob_two), ins_loss, (logits, labels), (Attention_q, Attention_k), (Affinity_q, Affinity_k)
         
         else:
             fea_q, self_fea_q = self.encoder_q(im_q)

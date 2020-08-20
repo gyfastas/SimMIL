@@ -213,13 +213,14 @@ model = GraphCon(args.agg_mode,
                  BYOL_flag=BYOL_flag, BYOL_size=config.projection_size, BYOL_hidden_size=config.projection_hidden_size)
 if args.cuda:
     model.cuda()
-print(model)
+# print(model)
 
 parameters = [{'params': model.parameters()}]
 optimizer = optim.Adam(parameters, lr=args.lr, betas=(0.9, 0.999), weight_decay=args.reg)
 
 criterion_ce = nn.CrossEntropyLoss()
-criterion_mse = nn.MSELoss(reduction='sum')
+# criterion_mse = nn.MSELoss(reduction='sum')
+criterion_mse = nn.MSELoss()
 criterion_l1 = nn.L1Loss()
 
 def train_multi_batch(epoch):
@@ -243,7 +244,7 @@ def train_multi_batch(epoch):
         optimizer.zero_grad()
         # forward
         if BYOL_flag == True:
-            Y_prob_q, ins_loss, (logits, labels), (self_fea_q, self_fea_k), (Attention_q, Attention_k), (Affinity_q, Affinity_k)\
+            Y_prob_q, (online_prob_one, online_prob_two), ins_loss, (logits, labels), (Attention_q, Attention_k), (Affinity_q, Affinity_k)\
                 = model(img_q, img_k, batch, bag_idx, bag_label)
         else:
             Y_prob_q, (logits, labels), (self_fea_q, self_fea_k), (Attention_q, Attention_k), (Affinity_q, Affinity_k)\
@@ -253,11 +254,14 @@ def train_multi_batch(epoch):
         total_loss = ce_loss
         CE_loss += ce_loss.item()
         if args.weight_bag != 0:
-            baginfo_loss = criterion_ce(logits, labels)
-            BagInfo_loss += baginfo_loss.item()
-            total_loss = total_loss + args.weight_bag * baginfo_loss
+            baginfo_loss_one = criterion_ce(online_prob_one, labels)
+            baginfo_loss_two = criterion_ce(online_prob_two, labels)
+            BagInfo_loss += baginfo_loss_one.item()/2
+            BagInfo_loss += baginfo_loss_two.item()/2
+            total_loss = total_loss + args.weight_bag * baginfo_loss_one/2 +  args.weight_bag * baginfo_loss_two/2
         if args.weight_mse != 0:
-            mse_loss = criterion_mse(Affinity_q, Affinity_k)/data[0].shape[0]
+            # mse_loss = criterion_mse(Y_prob_q_sf, Y_prob_k_sf)/data[0].shape[0]
+            mse_loss = criterion_mse(Y_prob_q_sf, Y_prob_k_sf)
             MSE_loss += mse_loss.item()
             total_loss = total_loss + args.weight_mse * mse_loss
         if args.weight_self != 0 and BYOL_flag == False:
@@ -340,6 +344,7 @@ def test(epoch):
 if __name__ == "__main__":
     logger.log_string('Start Training')
     print_args(args, logger)
+    # os.environ["CUDA_VISIBLE_DEVICES"] = "1"
     for epoch in range(1, args.epochs + 1):
         # test(epoch)
         adjust_learning_rate(optimizer, epoch, args, logger)
