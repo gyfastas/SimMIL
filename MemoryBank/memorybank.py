@@ -319,13 +319,14 @@ class LocalAggregationLossModule(torch.nn.Module):
         curr_close_nei = torch.eq(batch_labels, _cluster_labels)
         return curr_close_nei.byte()
 
-    def forward(self, indices, outputs, gpu_idx):
+    def forward(self, indices, ins_q, ins_k, gpu_idx):
         """
         :param back_nei_idxs: shape (batch_size, 4096)
         :param all_close_nei: shape (batch_size, _size_of_dataset) in byte
         """
         self.indices = indices.detach()
-        self.outputs = utils.l2_normalize(outputs, dim=1)
+        self.outputs = utils.l2_normalize(ins_q, dim=1)
+        self.new_outputs = utils.l2_normalize(ins_k, dim=1)
         self._bank = self.memory_bank_broadcast[gpu_idx]  # select a mem bank based on gpu device
         self._cluster_labels = self.cluster_label_broadcast[gpu_idx]
 
@@ -352,7 +353,7 @@ class LocalAggregationLossModule(torch.nn.Module):
         loss = -torch.mean(torch.log(relative_probs + 1e-7)).unsqueeze(0)
 
         # compute new data memory
-        new_data_memory = self.updated_new_data_memory(self.indices, self.outputs)
+        new_data_memory = self.new_outputs
 
         return loss, new_data_memory
 

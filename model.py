@@ -2,745 +2,429 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
+from Builder.e2e import SelfAttention
 from GraphMIL.GraphBuilder.KNNGraphBuilder import KNNGraphBuilder
 from GraphMIL.GCN.GCNConv import GCNConv
 from GraphMIL.Aggregator.GraphWeightedAvgPooling import GraphWeightedAvgPooling
 from torch_geometric.utils import dense_to_sparse
+from Builder.cifar_res import ResNet32x32, ShakeShakeBlock, cifar_shakeshake26
 
-import math
+from Builder.memorybank import ODCMemory
+import numpy as np
+from Builder.WRN import Wide_ResNet
 
-class Attention(nn.Module):
-    def __init__(self):
-        super(Attention, self).__init__()
-        self.L = 512
-        self.D = 128
-        self.K = 1
-        self.criterion = nn.CrossEntropyLoss()
-        self.feature_extractor_part1 = nn.Sequential(
-            nn.Conv2d(1, 20, kernel_size=5),
-            nn.ReLU(),
-            nn.MaxPool2d(2, stride=2),
-            nn.Conv2d(20, 50, kernel_size=5),
-            nn.ReLU(),
-            nn.MaxPool2d(2, stride=2)
-        )
+from torch.nn.functional import one_hot
 
-        self.feature_extractor_part2 = nn.Sequential(
-            nn.Linear(50 * 4 * 4, self.L),
-            nn.ReLU(),
-        )
+# Attention/Mean Pooling
+def attention_weighted_feature(H, A, batch, pool_model='mean'):
 
-        self.attention = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Tanh(),
-            nn.Linear(self.D, self.K)
-        )
-
-        self.classifier = nn.Linear(self.L*self.K, 4)
-        model_resnet50 = models.resnet18(pretrained=True)
-        self.conv1 = model_resnet50.conv1
-        self.bn1 = model_resnet50.bn1
-        self.relu = model_resnet50.relu
-        self.maxpool = model_resnet50.maxpool
-        self.layer1 = model_resnet50.layer1
-        self.layer2 = model_resnet50.layer2
-        self.layer3 = model_resnet50.layer3
-        self.layer4 = model_resnet50.layer4
-        self.avgpool = model_resnet50.avgpool
-
-    def forward(self, x):
-        x = x.squeeze(0)
-
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-        x = self.avgpool(x)
-        H = x.view(x.size(0), -1)
-
-        A = self.attention(H)  # NxK
-        A = torch.transpose(A, 1, 0)  # KxN
+    if batch is None:
         A = F.softmax(A, dim=1)  # softmax over N
+        attention_weighted_feature = torch.mm(A, H) 
+    elif batch.shape[0] == H.shape[0]:
+        bag_num = torch.max(batch) + 1
+        indicator = F.one_hot(batch, bag_num).float()
+        if pool_model == 'mean':
+            A = torch.softmax(indicator.sub((1 - indicator).mul(65535)), dim=0)
+        elif pool_model == 'attention':
+            A = torch.mul(torch.transpose(A, 1, 0), indicator)
+            A = torch.softmax(A.sub((1 - indicator).mul(65535)), dim=0)
 
-        M = torch.mm(A, H)  # KxL
+        attention_weighted_feature = torch.mm(A.T, H)
+    return attention_weighted_feature
 
-        Y_prob = self.classifier(M)
-        return Y_prob, A
+def bag_shffule(indicator, bag_label):
+    # shuffle bag number
+    index = torch.randperm(indicator.shape[1]).cuda()
+    shuffle_indicator = indicator[:, index]
+    shuffle_label = bag_label[index]
+    # random mask for dropout some instances in negative bags
+    random_mask1 = torch.randint(0, 2, indicator.shape).cuda()
+    random_mask2 = torch.randint(0, 2, indicator.shape).cuda()
+    random_mask1[:, bag_label==1] = 1
+    random_mask2[:, shuffle_label==1] = 1
+    indicator = indicator*random_mask1
+    shuffle_indicator = shuffle_indicator*random_mask2
+    # mix the attention mask and labels
+    mixed_indicator = indicator + shuffle_indicator
+    mixed_label = bag_label + shuffle_label
+    mixed_indicator[mixed_indicator > 1] = 1
+    mixed_label[mixed_label > 1] = 1
+    return mixed_label, mixed_indicator
 
-    def calculate_classification_error(self, X, Y):
-        Y = Y.float()
-        Y_prob, _ = self.forward(X)
-        # Y_hat = torch.argmax(Y_prob, dim=1).float().max()
-        Y_hat = torch.argmax(Y_prob, dim=1).float()
-        # _, counts = torch.unique(Y_hat, sorted=True, return_counts=True)
-        # Y_hat = torch.argmax(counts)
-        # error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
+class Res_Cls_Moco(nn.Module):
+    '''
+    Cifar classification + MoCod
+    '''
+    def __init__(self, num_classes, m, attention, L= 384, dim=128, K=4096, T=0.07):
+        super(Res_Cls_Moco, self).__init__()
+        # Student Net
+        self.STU = cifar_shakeshake26(attention=attention, L=L)
+        # self.STU.attention = attention(L)
+        self.STU.fc1 = nn.Linear(384, num_classes)
+        self.STU.fc2 = nn.Linear(384, dim)
+        # Teacher Net
+        self.TEA = cifar_shakeshake26(attention=attention, L=L)
+        # self.TEA.attention = attention(L)
+        self.TEA.fc1 = nn.Linear(384, num_classes)
+        self.TEA.fc2 = nn.Linear(384, dim)
+        # Memory Queue
+        self.K = K
+        self.T = T
+        self.m = m
+        # self.register_buffer('ins_labels_mmb', F.one_hot(init_ins_labels, 2).float())
+        # create the queue
+        self.register_buffer("queue", torch.randn(dim, K))
+        self.queue = nn.functional.normalize(self.queue, dim=0)
+        self.register_buffer("queue_ptr", torch.zeros(1, dtype=torch.long))
 
-        return Y_hat.cpu(), Y.cpu()
+    def _momentum_update_tea_and_stu(self):
+        """
+        Momentum update of the key backbone&agg
+        """
+        for param_q, param_k in zip(self.STU.parameters(), self.TEA.parameters()):
+            param_k.data = param_k.data * self.m + param_q.data * (1. - self.m)
 
-    def calculate_objective(self, X, Y):
-        Y_prob, A = self.forward(X)
-        Y_hat = torch.argmax(Y_prob).float()
-        neg_log_likelihood = self.criterion(Y_prob, Y)
-        Y = Y.float()
-        error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
-        return neg_log_likelihood, error, A, torch.argmax(Y_prob).item(), Y.item()
+    @torch.no_grad()
+    def _dequeue_and_enqueue(self, keys):
+        # gather keys before updating queue
+        # keys = concat_all_gather(keys)
+        batch_size = keys.shape[0]
 
-class GatedAttention(nn.Module):
-    def __init__(self):
-        super(GatedAttention, self).__init__()
-        self.L = 512
-        self.D = 128
-        self.K = 1
-        self.attention = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Tanh(),
-            nn.Linear(self.D, self.K)
-        )
-        self.attention_V = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Tanh()
-        )
+        ptr = int(self.queue_ptr)
 
-        self.attention_U = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Sigmoid()
-        )
+        # assert self.K % batch_size == 0  # for simplicity
 
-        self.attention_weights = nn.Linear(self.D, self.K)
-
-        self.classifier = nn.Linear(self.L*self.K, 4)
-        # self.classifier = nn.Sequential(
-        #     nn.Linear(self.L * self.K, 1),
-        #     nn.Sigmoid()
-        # )
-        model_resnet50 = models.resnet18(pretrained=True)
-        self.conv1 = model_resnet50.conv1
-        self.bn1 = model_resnet50.bn1
-        self.relu = model_resnet50.relu
-        self.maxpool = model_resnet50.maxpool
-        self.layer1 = model_resnet50.layer1
-        self.layer2 = model_resnet50.layer2
-        self.layer3 = model_resnet50.layer3
-        self.layer4 = model_resnet50.layer4
-        self.avgpool = model_resnet50.avgpool
-        self.criterion = nn.CrossEntropyLoss()
-    def forward(self, x):
-        x = x.squeeze(0)
-
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-        x = self.avgpool(x)
-        H = x.view(x.size(0), -1)
-
-        A_V = self.attention_V(H)  # NxD
-        A_U = self.attention_U(H)  # NxD
-        A = self.attention_weights(A_V * A_U) # element wise multiplication # NxK
-        A = torch.transpose(A, 1, 0)  # KxN
-        A = F.softmax(A, dim=1)  # softmax over N
-
-        M = torch.mm(A, H)  # KxL
-
-        Y_prob = self.classifier(M)
-        # Y_hat = torch.argmax(Y_prob).float()
-        # Y_hat = torch.ge(Y_prob, 0.5).float()
-        return Y_prob, A
-
-    # # AUXILIARY METHODS
-    # def calculate_classification_error(self, X, Y):
-    #     Y = Y.float()
-    #     _, Y_hat, _ = self.forward(X)
-    #
-    #     error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
-    #
-    #     return error, Y_hat
-    def calculate_classification_error(self, X, Y):
-        Y = Y.float()
-        Y_prob, _= self.forward(X)
-        # Y_hat = torch.argmax(Y_prob, dim=1).float().max()
-        Y_hat = torch.argmax(Y_prob, dim=1).float()
-        # _, counts = torch.unique(Y_hat, sorted=True, return_counts=True)
-        # Y_hat = torch.argmax(counts)
-        # error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
-
-        return Y_hat.cpu(), Y.cpu()
-
-    def calculate_objective(self, X, Y):
-
-        Y_prob, A = self.forward(X)
-        # Y_hat = torch.ge(Y_prob, 0.5).float()
-
-        # Y_prob = torch.clamp(Y_prob, min=1e-5, max=1. - 1e-5)
-        # neg_log_likelihood = -1. * (Y * torch.log(Y_prob) + (1. - Y) * torch.log(1. - Y_prob))  # negative log bernoulli
-        Y_hat = torch.argmax(Y_prob).float()
-        neg_log_likelihood = self.criterion(Y_prob, Y)
-        Y = Y.float()
-        error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
-        return neg_log_likelihood, error, A, torch.argmax(Y_prob).item(), Y.item()
-
-
-class Res18(nn.Module):
-    def __init__(self):
-        super(Res18, self).__init__()
-        self.L = 512
-        self.D = 128
-        self.K = 1
-
-        self.attention_weights = nn.Linear(self.D, self.K)
-
-        self.classifier = nn.Linear(self.L*self.K, 4)
-        model_resnet50 = models.resnet18(pretrained=True)
-        self.conv1 = model_resnet50.conv1
-        self.bn1 = model_resnet50.bn1
-        self.relu = model_resnet50.relu
-        self.maxpool = model_resnet50.maxpool
-        self.layer1 = model_resnet50.layer1
-        self.layer2 = model_resnet50.layer2
-        self.layer3 = model_resnet50.layer3
-        self.layer4 = model_resnet50.layer4
-        self.avgpool = model_resnet50.avgpool
-        self.criterion = nn.CrossEntropyLoss()
-    def forward(self, x):
-        if len(x.shape)>4:
-            x = x.squeeze(0)
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-        x = self.avgpool(x)
-        H = x.view(x.size(0), -1)
-
-
-        Y_prob = self.classifier(H)
-        # Y_hat = torch.argmax(Y_prob).float()
-        # Y_hat = torch.ge(Y_prob, 0.5).float()
-        return Y_prob
-
-    def calculate_objective(self, X, Y):
-
-        Y_prob = self.forward(X)
-        # Y_hat = torch.ge(Y_prob, 0.5).float()
-
-        # Y_prob = torch.clamp(Y_prob, min=1e-5, max=1. - 1e-5)
-        # neg_log_likelihood = -1. * (Y * torch.log(Y_prob) + (1. - Y) * torch.log(1. - Y_prob))  # negative log bernoulli
-        Y_hat = torch.argmax(Y_prob).float()
-        neg_log_likelihood = self.criterion(Y_prob, Y)
-        Y = Y.float()
-        error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
-        return neg_log_likelihood, error, None, torch.argmax(Y_prob,dim=1).cpu(), Y.cpu()
-
-    def calculate_classification_error(self, X, Y):
-        Y = Y.float()
-        Y_prob= self.forward(X)
-        # Y_hat = torch.argmax(Y_prob, dim=1).float().max()
-        Y_hat = torch.argmax(Y_prob, dim=1).float()
-        _, counts = torch.unique(Y_hat, sorted=True, return_counts=True)
-        Y_hat = torch.argmax(counts)
-        # error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
-
-        return Y_hat.cpu(), Y.cpu()
-
-class Res18_SAFS(nn.Module):
-    def __init__(self, dropout=0.1):
-        super(Res18_SAFS, self).__init__()
-        self.L = 512
-        self.D = 128
-        self.K = 1
-        self.dk = 64
-        self.criterion = nn.CrossEntropyLoss()
-        self.attention_weights = nn.Linear(self.D, self.K)
-
-        self.classifier = nn.Linear(self.L*self.K, 4)
-
-        model_resnet50 = models.resnet18(pretrained=True)
-        self.conv1 = model_resnet50.conv1
-        self.bn1 = model_resnet50.bn1
-        self.relu = model_resnet50.relu
-        self.maxpool = model_resnet50.maxpool
-        self.layer1 = model_resnet50.layer1
-        self.layer2 = model_resnet50.layer2
-        self.layer3 = model_resnet50.layer3
-        self.layer4 = model_resnet50.layer4
-        self.avgpool = model_resnet50.avgpool
-        # self attention
-        self.SA1 = nn.Linear(self.L, self.dk)
-        self.SA2 = nn.Linear(self.L, self.dk)
-        self.SA = SelfAttention()
-        self.dropout = nn.Dropout(dropout)
-        #gated attention
-        self.attention = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Tanh(),
-            nn.Linear(self.D, self.K)
-        )
-        self.attention_V = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Tanh()
-        )
-
-        self.attention_U = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Sigmoid()
-        )
-
-        self.attention_weights = nn.Linear(self.D, self.K)
-
-    def forward(self, x):
-        if len(x.shape)>4:
-            x = x.squeeze(0)
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-        x = self.avgpool(x)
-        H = x.view(x.size(0), -1)
-
-        Q = self.SA1(H)
-        K = self.SA2(H)
-        H = self.SA(Q, K, H, mask=None, dropout=self.dropout)
-
-
-        A_V = self.attention_V(H)  # NxD
-        A_U = self.attention_U(H)  # NxD
-        A = self.attention_weights(A_V * A_U) # element wise multiplication # NxK
-        A = torch.transpose(A, 1, 0)  # KxN
-        A = F.softmax(A, dim=1)  # softmax over N
-
-        M = torch.mm(A, H)  # KxL
-
-        Y_prob = self.classifier(M)
-        # Y_hat = torch.argmax(Y_prob).float()
-        # Y_hat = torch.ge(Y_prob, 0.5).float()
-        return Y_prob
-
-
-
-    def calculate_objective(self, X, Y):
-
-        Y_prob = self.forward(X)
-        # Y_hat = torch.ge(Y_prob, 0.5).float()
-
-        # Y_prob = torch.clamp(Y_prob, min=1e-5, max=1. - 1e-5)
-        # neg_log_likelihood = -1. * (Y * torch.log(Y_prob) + (1. - Y) * torch.log(1. - Y_prob))  # negative log bernoulli
-        Y_hat = torch.argmax(Y_prob).float()
-        neg_log_likelihood = self.criterion(Y_prob, Y)
-        Y = Y.float()
-        error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
-        return neg_log_likelihood, error, None, torch.argmax(Y_prob,dim=1).cpu(), Y.cpu()
-
-    def calculate_classification_error(self, X, Y):
-        Y = Y.float()
-        Y_prob= self.forward(X)
-        # Y_hat = torch.argmax(Y_prob, dim=1).float().max()
-        Y_hat = torch.argmax(Y_prob, dim=1).float()
-        # _, counts = torch.unique(Y_hat, sorted=True, return_counts=True)
-        # Y_hat = torch.argmax(counts)
-        # error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
-
-        return Y_hat.cpu(), Y.cpu()
-
-# self_attention module
-class SelfAttention(nn.Module):
-    """
-    Compute 'Scaled Dot Product Attention
-    """
-
-    def forward(self, query, key, value, mask=None, dropout=None):
-        scores = torch.matmul(query, key.transpose(-2, -1)) \
-                 / math.sqrt(query.size(-1))
-
-        if mask is not None:
-            scores = scores.masked_fill(mask == 0, -1e9)
-
-        p_attn = F.softmax(scores, dim=-1)
-
-        if dropout is not None:
-            p_attn = dropout(p_attn)
-
-        return torch.matmul(p_attn, value)
-
-#2. backbone+Agg
-# 2.1 Backbone
-class ResBackbone(nn.Module):
-    def __init__(self, arch, pretrained):
-        super(ResBackbone, self).__init__()
-        backbone = models.__dict__[arch](pretrained=pretrained)
-        self.conv1 = backbone.conv1
-        self.bn1 = backbone.bn1
-        self.relu = backbone.relu
-        self.maxpool = backbone.maxpool
-        self.layer1 = backbone.layer1
-        self.layer2 = backbone.layer2
-        self.layer3 = backbone.layer3
-        self.layer4 = backbone.layer4
-        self.avgpool = backbone.avgpool
-        self.fc = nn.Linear(512, 128)
-    def forward(self, x):
-        # x = x.squeeze(0)
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        self_feat = self.fc(x)
-        return x, self_feat
-# 2.2 Agg
-class AggNet(nn.Module):
-    def __init__(self):
-        super(AggNet, self).__init__()
-
-    def calculate_classification_error(self, X, Y):
-        Y = Y.float()
-        Y_prob, _= self.forward(X)
-        # Y_hat = torch.argmax(Y_prob, dim=1).float().max()
-        Y_hat = torch.argmax(Y_prob, dim=1).float()
-        # _, counts = torch.unique(Y_hat, sorted=True, return_counts=True)
-        # Y_hat = torch.argmax(counts)
-        # error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
-
-        return Y_hat.cpu(), Y.cpu()
-
-    def calculate_objective(self, X, Y, batch=None):
-
-        Y_prob, A = self.forward(X, batch=batch)
-        # Y_hat = torch.ge(Y_prob, 0.5).float()
-
-        # Y_prob = torch.clamp(Y_prob, min=1e-5, max=1. - 1e-5)
-        # neg_log_likelihood = -1. * (Y * torch.log(Y_prob) + (1. - Y) * torch.log(1. - Y_prob))  # negative log bernoulli
-        if (Y_prob.dim() > 1): ## Batch supported
-            Y_hat   = torch.argmax(Y_prob, 1).float() ## [N, ]
-            # print(Y)
-            neg_log_likelihood = self.criterion(Y_prob, Y)
-            Y = Y.float()
-            error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
-            return neg_log_likelihood, error, A, torch.argmax(Y_prob, 1), Y
+        # replace the keys at ptr (dequeue and enqueue)
+        if (ptr + batch_size) < self.K:
+            self.queue[:, ptr:ptr + batch_size] = keys.T
+            ptr = ptr + batch_size
         else:
-            Y_hat = torch.argmax(Y_prob).float()
-            neg_log_likelihood = self.criterion(Y_prob, Y)
-            Y = Y.float()
-            error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
-            return neg_log_likelihood, error, A, torch.argmax(Y_prob).item(), Y.item()
+            self.queue[:, ptr:] = keys[:self.K-ptr].T
+            self.queue[:, :ptr + batch_size - self.K] = keys[self.K-ptr:].T
+            ptr = ptr + batch_size - self.K
+        # ptr = (ptr + batch_size) % self.K  # move pointer
 
-class Agg_GAttention(AggNet):
-    def __init__(self):
-        super(Agg_GAttention, self).__init__()
-        self.L = 512
-        self.D = 128
-        self.K = 1
+        self.queue_ptr[0] = ptr
+        # print(ptr)
 
-        self.criterion = nn.CrossEntropyLoss()
-        self.attention = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Tanh(),
-            nn.Linear(self.D, self.K)
-        )
-        self.attention_V = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Tanh()
-        )
+    @staticmethod
+    def get_shuffle_ids(bsz):
+        """generate shuffle ids for ShuffleBN"""
+        forward_inds = torch.randperm(bsz).long().cuda()
+        backward_inds = torch.zeros(bsz).long().cuda()
+        value = torch.arange(bsz).long().cuda()
+        backward_inds.index_copy_(0, forward_inds, value)
+        return forward_inds, backward_inds
 
-        self.attention_U = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Sigmoid()
-        )
+    def forward(self, im_q, im_k):
+        # bsz = im_q.size(0)
+        ins_feat_q, _ = self.STU(im_q, None)
+        bag_cls_q = self.STU.fc1(ins_feat_q)
+        ins_embed_q = self.STU.fc2(ins_feat_q)
+        q = nn.functional.normalize(ins_embed_q, dim=1)
+        if im_k is None:
+            return (bag_cls_q, None), (None, None)
+        with torch.no_grad():
+            self._momentum_update_tea_and_stu()
+            #TODO: shuffle may not be suitable for bag
 
-        self.attention_weights = nn.Linear(self.D, self.K)
+            # ids for ShuffleBN
+            # shuffle_ids, reverse_ids = self.get_shuffle_ids(bsz)
+            # #shuffle
+            # im_k = im_k[shuffle_ids]
+            # ins_feat_k, attention_k = self.TEA(im_k, batch)
+            # #unshuffle
+            # ins_feat_k, attention_k = ins_feat_k[reverse_ids], attention_k[reverse_ids]
 
-        self.classifier = nn.Linear(self.L*self.K, 4)
-    def forward(self, H, batch=None):
-        A_V = self.attention_V(H)  # NxD
-        A_U = self.attention_U(H)  # NxD
-        A = self.attention_weights(A_V * A_U) # element wise multiplication # NxK
-        A = torch.transpose(A, 1, 0)  # KxN
-        ## batch: map each instance to corresponding bag in a mini-batch [N] (0,0,0...1,....,2....)
-        if batch is None:
-            A = F.softmax(A, dim=1)  # softmax over N
-            M = torch.mm(A, H)
-            Y_prob = self.classifier(M)
-        elif batch.shape[0]==H.shape[0]:
-            bag_num = torch.max(batch) + 1
-            ##TODO: support batch as bag size: [N1, N2...NK]
-            ##TODO: implementing with pytorch-scatter
+            # forward twice
 
-            M = [torch.mm(F.softmax(A.squeeze(0)[batch==i].unsqueeze(0), dim=1), H[batch==i]) for i in range(0, bag_num)]
-            A = [F.softmax(A.squeeze(0)[batch == i]) for i in range(0, bag_num)]
-            Y_prob = torch.cat([self.classifier(M[i]) for i in range(0, bag_num)]) # [bg_num, 4]
-        # Y_hat = torch.argmax(Y_prob).float()
-        # Y_hat = torch.ge(Y_prob, 0.5).float()
-        return Y_prob, A
+            ins_feat_k_0, _ = self.TEA(im_k[:int(im_k.size(0)/2)], None)
+            ins_feat_k_1, _ = self.TEA(im_k[int(im_k.size(0)/2):], None)
+            ins_feat_k = torch.cat((ins_feat_k_0, ins_feat_k_1))
+            bag_cls_k = self.TEA.fc1(ins_feat_k)
+            ins_embed_k = self.TEA.fc2(ins_feat_k)
+            k = nn.functional.normalize(ins_embed_k, dim=1)
 
-class Agg_SAttention(AggNet):
-    def __init__(self, dropout=0.1):
-        super(Agg_SAttention, self).__init__()
-        self.L = 512
-        self.D = 128
-        self.K = 1
-        self.dk = 64
-        self.criterion = nn.CrossEntropyLoss()
-        self.attention_weights = nn.Linear(self.D, self.K)
+        l_pos = torch.einsum('nc,nc->n', [q, k]).unsqueeze(-1)
+        # negative logits: NxK
+        l_neg = torch.einsum('nc,ck->nk', [q, self.queue.clone().detach()])
+        # logits: Nx(1+K)
+        logits = torch.cat([l_pos, l_neg], dim=1)
+        # apply temperature
+        logits /= self.T
+        labels = torch.zeros(logits.shape[0], dtype=torch.long).cuda()
+        self._dequeue_and_enqueue(k)
+        return (bag_cls_q, bag_cls_k), (logits, labels)
 
-        self.classifier = nn.Linear(self.L*self.K, 4)
+class MT_ResAMIL(nn.Module):
+    '''
+    MIL + MoCo with Instance or Bag contrast
+    '''
+    def __init__(self, num_classes, attention, L, m, init_ins_labels, dim=128, K=4096, T=0.07):
+        super(MT_ResAMIL, self).__init__()
+        # Student Net
+        self.STU = cifar_shakeshake26(attention=attention, L=L)
+        self.STU.fc1 = nn.Linear(384, num_classes)
+        self.STU.fc2 = nn.Linear(384, dim)
+        # Teacher Net
+        self.TEA = cifar_shakeshake26(attention=attention, L=L)
+        self.TEA.fc1 = nn.Linear(384, num_classes)
+        self.TEA.fc2 = nn.Linear(384, dim)
+        # Memory Queue
+        self.K = K
+        self.T = T
+        self.m = m
+        # self.register_buffer('ins_labels_mmb', F.one_hot(init_ins_labels, 2).float())
+        # create the queue
+        self.register_buffer("queue", torch.randn(dim, K))
+        self.queue = nn.functional.normalize(self.queue, dim=0)
+        self.register_buffer("queue_ptr", torch.zeros(1, dtype=torch.long))
 
-        # self attention
-        self.SA1 = nn.Linear(self.L, self.dk)
-        self.SA2 = nn.Linear(self.L, self.dk)
-        self.SA = SelfAttention()
-        self.dropout = nn.Dropout(dropout)
-        #gated attention
-        self.attention = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Tanh(),
-            nn.Linear(self.D, self.K)
-        )
-        self.attention_V = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Tanh()
-        )
+    def _momentum_update_tea_and_stu(self):
+        """
+        Momentum update of the key backbone&agg
+        """
+        for param_q, param_k in zip(self.STU.parameters(), self.TEA.parameters()):
+            param_k.data = param_k.data * self.m + param_q.data * (1. - self.m)
 
-        self.attention_U = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Sigmoid()
-        )
+    @torch.no_grad()
+    def _dequeue_and_enqueue(self, keys):
+        # gather keys before updating queue
+        # keys = concat_all_gather(keys)
+        batch_size = keys.shape[0]
 
-        self.attention_weights = nn.Linear(self.D, self.K)
+        ptr = int(self.queue_ptr)
 
-    def forward(self, H, batch=None):
-        Q = self.SA1(H)
-        K = self.SA2(H)
-        H = self.SA(Q, K, H, mask=None, dropout=self.dropout)
+        # assert self.K % batch_size == 0  # for simplicity
+
+        # replace the keys at ptr (dequeue and enqueue)
+        if (ptr + batch_size) < self.K:
+            self.queue[:, ptr:ptr + batch_size] = keys.T
+            ptr = ptr + batch_size
+        else:
+            self.queue[:, ptr:] = keys[:self.K-ptr].T
+            self.queue[:, :ptr + batch_size - self.K] = keys[self.K-ptr:].T
+            ptr = ptr + batch_size - self.K
+        # ptr = (ptr + batch_size) % self.K  # move pointer
+
+        self.queue_ptr[0] = ptr
+        print(ptr)
+
+    @staticmethod
+    def get_shuffle_ids(bsz):
+        """generate shuffle ids for ShuffleBN"""
+        forward_inds = torch.randperm(bsz).long().cuda()
+        backward_inds = torch.zeros(bsz).long().cuda()
+        value = torch.arange(bsz).long().cuda()
+        backward_inds.index_copy_(0, forward_inds, value)
+        return forward_inds, backward_inds
+
+    @staticmethod
+    def bag_shuffle(batch):
+        bag_num = torch.max(batch)
+        shuffled_batch = torch.randint(0, bag_num+1, batch.shape).cuda()
+        return shuffled_batch
+
+    def forward(self, im_q, im_k, batch):
+        # bsz = im_q.size(0)
+        ins_feat_q, attention_q = self.STU(im_q, batch)
+        bag_feat_q = attention_weighted_feature(ins_feat_q, attention_q, batch)
+        bag_cls_q = self.STU.fc1(bag_feat_q)
+        ins_embed_q = self.STU.fc2(ins_feat_q)
+        q = nn.functional.normalize(ins_embed_q, dim=1)
+        # shuffled_batch_list =[]
+        # for _ in range(16):
+        #     shuffled_batch = self.bag_shuffle(batch)
+        #     bag_feat_tmp = self.attention_weighted_feature(ins_feat_q, attention_q, shuffled_batch)
+        #     bag_feat_q = torch.cat((bag_feat_q, bag_feat_tmp))
+        #     shuffled_batch_list.append(shuffled_batch)
+        # bag_embed_q = self.STU.fc2(bag_feat_q)
+        # q = nn.functional.normalize(bag_embed_q, dim=1)
+        if im_k is None:
+            return bag_cls_q
+        with torch.no_grad():
+            self._momentum_update_tea_and_stu()
+            #TODO: shuffle may not be suitable for bag
+
+            # ids for ShuffleBN
+            # shuffle_ids, reverse_ids = self.get_shuffle_ids(bsz)
+            # #shuffle
+            # im_k = im_k[shuffle_ids]
+            # ins_feat_k, attention_k = self.TEA(im_k, batch)
+            # #unshuffle
+            # ins_feat_k, attention_k = ins_feat_k[reverse_ids], attention_k[reverse_ids]
+
+            # forward twice
+            im_k_0, batch_0 = im_k[batch < batch.float().mean()], batch[batch < batch.float().mean()]
+            ins_feat_k_0, attention_k_0 = self.TEA(im_k_0, batch_0)
+            im_k_1, batch_1 = im_k[batch >= batch.float().mean()], batch[batch >= batch.float().mean()]
+            ins_feat_k_1, attention_k_1 = self.TEA(im_k_1, batch_1)
+            ins_feat_k = torch.cat((ins_feat_k_0, ins_feat_k_1))
+            attention_k = torch.cat((attention_k_0, attention_k_1), dim=1)
+            bag_feat_k = attention_weighted_feature(ins_feat_k, attention_k, batch)
+            bag_cls_k = self.TEA.fc1(bag_feat_k)
+            ins_embed_k = self.TEA.fc2(ins_feat_k)
+            k = nn.functional.normalize(ins_embed_k, dim=1)
+            # for shuffled_batch in shuffled_batch_list:
+            #     bag_feat_tmp = self.attention_weighted_feature(ins_feat_k, attention_k, shuffled_batch)
+            #     bag_feat_k = torch.cat((bag_feat_k, bag_feat_tmp))
+            # bag_embed_k = self.TEA.fc2(bag_feat_k)
+            # k = nn.functional.normalize(bag_embed_k, dim=1)
+
+        l_pos = torch.einsum('nc,nc->n', [q, k]).unsqueeze(-1)
+        # negative logits: NxK
+        l_neg = torch.einsum('nc,ck->nk', [q, self.queue.clone().detach()])
+        # logits: Nx(1+K)
+        logits = torch.cat([l_pos, l_neg], dim=1)
+        # apply temperature
+        logits /= self.T
+        labels = torch.zeros(logits.shape[0], dtype=torch.long).cuda()
+        self._dequeue_and_enqueue(k)
+        return (bag_cls_q, bag_cls_k), (logits, labels)
+
+class MT_ResAMIL_TE(nn.Module):
+    '''f
+    MIL with temporal ensemble
+    '''
+    def __init__(self, num_classes, attention, L, m, init_ins_labels, ins_label_num):
+        super(MT_ResAMIL_TE, self).__init__()
+        # self.STU = cifar_shakeshake26(num_classes=num_classes, attention=attention, L=L)
+        self.STU = Wide_ResNet(28, 2, 0.3, num_classes, attention, L)
+        self.STU.fc1 = nn.Linear(L, num_classes)
+        self.STU.fc2 = nn.Linear(L, ins_label_num)
+        self.m = m
+        self.register_buffer('ins_labels_mmb', F.one_hot(init_ins_labels, ins_label_num).float())
+        self.register_buffer('ins_labels_mmb_revised', F.one_hot(init_ins_labels, ins_label_num).float())
+        # self.register_buffer('ins_labels_mmb', torch.zeros(init_ins_labels.shape[0], ins_label_num).float())
+        # self.register_buffer('ins_labels_mmb_revised', torch.zeros(init_ins_labels.shape[0], ins_label_num).float())
+    def _updata_ins_mb(self, output, index, epoch):
+        self.ins_labels_mmb[index] = self.ins_labels_mmb[index] * self.m + output * (1. - self.m)
+        self.ins_labels_mmb_revised[index] = self.ins_labels_mmb[index]
+        # self.ins_labels_mmb_revised[index] = self.ins_labels_mmb[index]/(1 - self.m**epoch)
+        # print(self.ins_labels_mmb_revised[index])
 
 
-        A_V = self.attention_V(H)  # NxD
-        A_U = self.attention_U(H)  # NxD
-        A = self.attention_weights(A_V * A_U) # element wise multiplication # NxK
-        A = torch.transpose(A, 1, 0)  # KxN
-        if batch is None:
-            A = F.softmax(A, dim=1)  # softmax over N
-            M = torch.mm(A, H)
-            Y_prob = self.classifier(M)
-        elif batch.shape[0]==H.shape[0]:
-            bag_num = torch.max(batch) + 1
-            ##TODO: support batch as bag size: [N1, N2...NK]
-            ##TODO: implementing with pytorch-scatter
+    def forward(self, im_q, batch):
+        # bsz = im_q.size(0)
+        ins_feat_q, attention_q = self.STU(im_q, batch)
+        bag_feat_q = attention_weighted_feature(ins_feat_q, attention_q, batch, 'mean')
+        bag_cls = self.STU.fc1(bag_feat_q)
+        ins_cls = self.STU.fc2(ins_feat_q)
+        return bag_cls, ins_cls
 
-            M = [torch.mm(F.softmax(A.squeeze(0)[batch==i].unsqueeze(0), dim=1), H[batch==i]) for i in range(0, bag_num)]
-            A = [F.softmax(A.squeeze(0)[batch == i]) for i in range(0, bag_num)]
-            Y_prob = torch.cat([self.classifier(M[i]) for i in range(0, bag_num)]) # [bg_num, 4]
-        # M = torch.mm(A, H)  # KxL
-        #
-        # Y_prob = self.classifier(M)
-        # Y_hat = torch.argmax(Y_prob).float()
-        # Y_hat = torch.ge(Y_prob, 0.5).float()
-        return Y_prob, A
+class MT_ResAMIL_BagIns(nn.Module):
+    '''
+    MIL Baseline with both
+        embedding-based (fc1)
+        Instance-based (fc2)
+    '''
+    def __init__(self, num_classes, attention, L):
+        super(MT_ResAMIL_BagIns, self).__init__()
+        # Student Net
+        self.STU = cifar_shakeshake26(attention=attention, L=L)
+        self.STU.fc1 = nn.Linear(384, num_classes)
+        self.STU.fc2 = nn.Linear(384, num_classes)
 
-class Agg_Attention(AggNet):
-    def __init__(self):
-        super(Agg_Attention, self).__init__()
-        self.L = 512
-        self.D = 128
-        self.K = 1
 
-        self.criterion = nn.CrossEntropyLoss()
-        self.attention = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Tanh(),
-            nn.Linear(self.D, self.K)
-        )
-        self.attention_V = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Tanh()
-        )
+    def forward(self, im_q, batch):
+        # bsz = im_q.size(0)
+        ins_feat_q, attention_q = self.STU(im_q, batch)
+        bag_feat_q = attention_weighted_feature(ins_feat_q, attention_q, batch)
+        bag_cls = self.STU.fc1(bag_feat_q)
+        ins_cls = self.STU.fc2(ins_feat_q)
+        ins_cls = attention_weighted_feature(ins_cls, attention_q, batch)
+        return bag_cls, ins_cls
 
-        self.attention_U = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Sigmoid()
-        )
+class MT_ResAMIL_ODC(nn.Module):
+    '''
+    MIL with temporal ensemble
+    '''
+    def __init__(self, num_classes, attention, L, m, dim, length, K):
+        super(MT_ResAMIL_ODC, self).__init__()
+        # self.STU = cifar_shakeshake26(num_classes=num_classes, attention=attention, L=L)
+        self.STU = Wide_ResNet(28, 2, 0.3, num_classes, attention, L)
+        self.STU.fc1 = nn.Linear(L, num_classes)
+        self.STU.head = nn.Sequential(nn.Linear(L, dim), nn.ReLU())
+        self.STU.fc2 = nn.Linear(dim, K)
+        self.memory_bank = ODCMemory(length=length, feat_dim=dim, momentum=m,
+                                     num_classes=K, min_cluster=20)
+        self.K = K
 
-        self.attention_weights = nn.Linear(self.D, self.K)
 
-        self.classifier = nn.Linear(self.L*self.K, 4)
-    def forward(self, H, batch=None):
-        A = self.attention(H)  # NxK
-        A = torch.transpose(A, 1, 0)  # KxN
-        if batch is None:
-            A = F.softmax(A, dim=1)  # softmax over N
-            M = torch.mm(A, H)
-            Y_prob = self.classifier(M)
-        elif batch.shape[0]==H.shape[0]:
-            bag_num = torch.max(batch) + 1
-            ##TODO: support batch as bag size: [N1, N2...NK]
-            ##TODO: implementing with pytorch-scatter
+    def forward(self, im_q, batch):
+        # bsz = im_q.size(0)
+        ins_feat, attention = self.STU(im_q, batch)
+        bag_feat = attention_weighted_feature(ins_feat, attention, batch)
+        bag_cls = self.STU.fc1(bag_feat)
 
-            M = [torch.mm(F.softmax(A.squeeze(0)[batch==i].unsqueeze(0), dim=1), H[batch==i]) for i in range(0, bag_num)]
-            A = [F.softmax(A.squeeze(0)[batch == i]) for i in range(0, bag_num)]
-            Y_prob = torch.cat([self.classifier(M[i]) for i in range(0, bag_num)]) # [bg_num, 4]
-        # M = torch.mm(A, H)  # KxL
-        #
-        # Y_prob = self.classifier(M)
-        # Y_hat = torch.argmax(Y_prob).float()
-        # Y_hat = torch.ge(Y_prob, 0.5).float()
-        return Y_prob, A
-# residual = gcn +attention
-class GraphMILNet(nn.Module):
+
+        ins_feat_RD = self.STU.head(ins_feat)
+        ins_cls = self.STU.fc2(ins_feat_RD)
+        return bag_cls, ins_cls, ins_feat_RD
+
+class ClusterAttentionPooling(nn.Module):
     """
-    Notes:
-        1. Data flow: (B*D1) -> GraphBuilder -> (B*D1, B*B) -> GCN -> (B*D2, B*B) -> Aggregator -> (1*D2, B*B)
-        2. For default, the features should be normalized before this module.
+    Cluster based attention pooling
     """
-
-    def __init__(self, graph_builder, gcn, aggregator):
-        super(GraphMILNet, self).__init__()
-        self.graph_builder = graph_builder
-        self.gcn = gcn
-        self.aggregator = aggregator
-
-    def forward(self, x):
-        A = self.graph_builder(x)
-        edge_index = dense_to_sparse(A)[0]  # [2, E]
-        x = self.gcn(x, edge_index)
-        return self.aggregator(x, A)
-
-class Agg_Residual(AggNet):
-    def __init__(self):
-        super(Agg_Residual, self).__init__()
-        self.L = 512
-        self.D = 128
-        self.K = 1
-        self.knn = 3
-
-        self.criterion = nn.CrossEntropyLoss()
-        self.attention = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Tanh(),
-            nn.Linear(self.D, self.K)
-        )
-        self.attention_V = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Tanh()
-        )
-
-        self.attention_U = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Sigmoid()
-        )
-
-        self.attention_weights = nn.Linear(self.D, self.K)
-
-        # GCN
-        self.graph_builder = KNNGraphBuilder(self.knn)
-        self.gcn = GCNConv(self.L, self.L)
-        self.aggregator = GraphWeightedAvgPooling()
-        self.GCNblock = GraphMILNet(self.graph_builder, self.gcn, self.aggregator)
-        self.classifier = nn.Linear(self.L * self.K, 4)
-
-    def forward(self, H, batch=None):
-        A_V = self.attention_V(H)  # NxD
-        A_U = self.attention_U(H)  # NxD
-        A = self.attention_weights(A_V * A_U)  # element wise multiplication # NxK
-        A = torch.transpose(A, 1, 0)  # KxN
+    def __init__(self, attpooling, num_clustering):
+        self.attpooling = attpooling
+        self.num_clustering = num_clustering
+    
+    def avg_clustering(self, ins_feat, cluster_labels, batch):
         if batch is None:
-            A = F.softmax(A, dim=1)  # softmax over N
-            M = torch.mm(A, H)
-            Y_prob = self.classifier(M)
-        elif batch.shape[0]==H.shape[0]:
-            bag_num = torch.max(batch) + 1
-            ##TODO: support batch as bag size: [N1, N2...NK]
-            ##TODO: implementing with pytorch-scatter
+            ins_feat = ins_feat.unsqueeze(0).permute(1,0,2).repeat([1, cluster_labels.shape[1], 1]) #[N, M, F]
+            return (ins_feat * cluster_labels.unsqueeze(-1)).mean(0) #[M, F]
+        ##TODO: multi-bag support
+        else:
+            raise NotImplementedError
+        
 
-            M = [torch.mm(F.softmax(A.squeeze(0)[batch==i].unsqueeze(0), dim=1), H[batch==i]) for i in range(0, bag_num)]
-            G = [self.GCNblock(H[batch==i]) for i in range(0, bag_num)]
-            A = [F.softmax(A.squeeze(0)[batch == i]) for i in range(0, bag_num)]
-            Y_prob = torch.cat([self.classifier(M[i]+G[i].unsqueeze(0)) for i in range(0, bag_num)]) # [bg_num, 4]bib
+    def forward(self, ins_feat, cluster_labels, batch):
+        """
+        Args:
+            ins_feat: [N, F] where N is the size of bag (or multi-bag)
+            cluster_labels: [N,] or [N, M]
+            batch: [N,]
+        """
+        ## Check if one-hot
+        if cluster_labels.dim() == 2:
+            pass
+        elif cluster_labels.dim() == 1:
+            ##make one-hot labels
+            cluster_labels = one_hot(cluster_labels, self.num_clustering)
+        else:
+            raise Exception("Cluster labels should be of size [N,] or [N, M]")
 
-        return Y_prob, A
+        ins_feat = self.avg_clustering(ins_feat, cluster_labels, batch) #[N, F] => [M, F]
+        ins_feat = self.attpooling(ins_feat) #[M, F] => [1, F]
 
-class Agg_Res_self(AggNet):
-    def __init__(self, dropout=0.1):
-        super(Agg_Res_self, self).__init__()
-        self.L = 512
-        self.D = 128
-        self.K = 1
-        self.knn = 3
-        self.dk = 64
-        self.criterion = nn.CrossEntropyLoss()
-        self.attention_weights = nn.Linear(self.D, self.K)
+        return ins_feat
 
-        self.classifier = nn.Linear(self.L * self.K, 4)
+        
 
-        # self attention
-        self.SA1 = nn.Linear(self.L, self.dk)
-        self.SA2 = nn.Linear(self.L, self.dk)
-        self.SA = SelfAttention()
-        self.dropout = nn.Dropout(dropout)
-        # gated attention
-        self.attention = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Tanh(),
-            nn.Linear(self.D, self.K)
-        )
-        self.attention_V = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Tanh()
-        )
 
-        self.attention_U = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Sigmoid()
-        )
 
-        self.attention_weights = nn.Linear(self.D, self.K)
+    def extract(self, im_q, batch):
+        with torch.no_grad():
+            ins_feat, _ = self.STU(im_q, batch)
+            ins_feat_RD = self.STU.head(ins_feat)
+            return ins_feat_RD.cpu()
 
-        # GCN
-        self.graph_builder = KNNGraphBuilder(self.knn)
-        self.gcn = GCNConv(self.L, self.L)
-        self.aggregator = GraphWeightedAvgPooling()
-        self.GCNblock = GraphMILNet(self.graph_builder, self.gcn, self.aggregator)
-        self.classifier = nn.Linear(self.L * self.K, 4)
-
-    def forward(self, H, batch=None):
-        Q = self.SA1(H)
-        K = self.SA2(H)
-        H = self.SA(Q, K, H, mask=None, dropout=self.dropout)
-
-        A_V = self.attention_V(H)  # NxD
-        A_U = self.attention_U(H)  # NxD
-        A = self.attention_weights(A_V * A_U)  # element wise multiplication # NxK
-        A = torch.transpose(A, 1, 0)  # KxN
-        if batch is None:
-            A = F.softmax(A, dim=1)  # softmax over N
-            M = torch.mm(A, H)
-            Y_prob = self.classifier(M)
-        elif batch.shape[0]==H.shape[0]:
-            bag_num = torch.max(batch) + 1
-            ##TODO: support batch as bag size: [N1, N2...NK]
-            ##TODO: implementing with pytorch-scatter
-
-            M = [torch.mm(F.softmax(A.squeeze(0)[batch==i].unsqueeze(0), dim=1), H[batch==i]) for i in range(0, bag_num)]
-            G = [self.GCNblock(H[batch==i]) for i in range(0, bag_num)]
-            A = [F.softmax(A.squeeze(0)[batch == i]) for i in range(0, bag_num)]
-            Y_prob = torch.cat([self.classifier(M[i]+G[i].unsqueeze(0)) for i in range(0, bag_num)]) # [bg_num, 4]bib
-
-        return Y_prob, A
+    def set_reweight(self, labels=None, reweight_pow=0.5):
+        """Loss re-weighting.
+        Re-weighting the loss according to the number of samples in each class.
+        Args:
+            labels (numpy.ndarray): Label assignments. Default: None.
+            reweight_pow (float): The power of re-weighting. Default: 0.5.
+        """
+        if labels is None:
+            if self.memory_bank.label_bank.is_cuda:
+                labels = self.memory_bank.label_bank.cpu().numpy()
+            else:
+                labels = self.memory_bank.label_bank.numpy()
+        hist = np.bincount(
+            labels, minlength=self.K).astype(np.float32)
+        inv_hist = (1. / (hist + 1e-5)) ** reweight_pow
+        weight = inv_hist / inv_hist.sum()
+        return torch.from_numpy(weight).cuda()

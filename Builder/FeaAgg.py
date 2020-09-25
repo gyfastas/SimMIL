@@ -8,8 +8,6 @@ from GraphMIL.GCN.GCNConv import GCNConv
 from GraphMIL.Aggregator.GraphWeightedAvgPooling import GraphWeightedAvgPooling
 from torch_geometric.utils import dense_to_sparse
 
-
-
 #2. backbone+Agg
 # 2.1 Backbone
 class ResBackbone(nn.Module):
@@ -44,40 +42,37 @@ class ResBackbone(nn.Module):
 class AggNet(nn.Module):
     def __init__(self, attention, graph, n_topk, model):
         super(AggNet, self).__init__()
-        self.L = 128
+        self.L = 512
         self.D = 64
-        self.K = 1
-        self.criterion = nn.CrossEntropyLoss()
         self.model = model
         self.attention = attention()
         self.graph = graph(n_topk)
-        self.fc = nn.Sequential(
-            nn.Linear(512, self.L),
-            nn.ReLU()
-        )
-        #TODO: concat or residual
+        self.mlp = nn.Sequential(nn.Linear(self.L, self.L),
+                                 nn.ReLU(),
+                                 nn.Linear(self.L, self.D))
+        # TODO: concat or residual
         if model == 'residual':
             self.classifier = nn.Linear(self.L * 2, 4)
         else:
-            self.classifier = nn.Linear(self.L * self.K, 4)
-
+            self.classifier = nn.Linear(self.L, 4)
 
     def forward(self, H, batch):
-        if H.shape[1] != 128:
-            H = self.fc(H)
-        bag_feature_attention, attention_weights = self.multi_batch_attention(H, batch)
-        bag_feature_graph, Affinity = self.graph(H, batch)
         if self.model == 'attention':
-            Y_prob_bag = self.classifier(bag_feature_attention)
-            # Y_prob_ins = self.classifier(H)
-            return Y_prob_bag, attention_weights, Affinity, bag_feature_attention
+            bag_feature, attention_weights = self.multi_batch_attention(H, batch)
+            bag_classification = self.classifier(bag_feature)
+            Affinity = None
         elif self.model == 'graph':
-            Y_prob = self.classifier(bag_feature_graph)
-            return Y_prob, attention_weights, Affinity, bag_feature_graph
+            bag_feature, Affinity = self.graph(H, batch)
+            bag_classification = self.classifier(bag_feature)
+            attention_weights = None
         elif self.model == 'residual':
+            bag_feature_attention, attention_weights = self.multi_batch_attention(H, batch)
+            bag_feature_graph, Affinity = self.graph(H, batch)
             bag_feature = torch.cat((bag_feature_attention, bag_feature_graph), dim=1)
-            Y_prob = self.classifier(bag_feature)
-            return Y_prob, attention_weights, Affinity, bag_feature
+            bag_classification = self.classifier(bag_feature)
+        bag_feature = self.mlp(bag_feature)
+        ins_classification = self.classifier(H)
+        return bag_classification, ins_classification, attention_weights, Affinity, bag_feature
 
     def multi_batch_attention(self, H, batch):
         A = self.attention(H, batch)
@@ -92,38 +87,28 @@ class AggNet(nn.Module):
             attention_weighted_feature = torch.mm(A.T, H)
         return attention_weighted_feature, A
 
-    # def calculate_objective(self, X, Y, batch=None):
-    #
-    #     Y_prob, Affinity, Graph = self.forward(X, batch=batch)
-    #     if (Y_prob.dim() > 1): ## Batch supported
-    #         Y_hat = torch.argmax(Y_prob, 1).float() ## [N, ]
-    #         # print(Y)
-    #         neg_log_likelihood = self.criterion(Y_prob, Y)
-    #         Y = Y.float()
-    #         error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
-    #         return neg_log_likelihood, error, torch.argmax(Y_prob, 1), Y
-    #     else:
-    #         Y_hat = torch.argmax(Y_prob).float()
-    #         neg_log_likelihood = self.criterion(Y_prob, Y)
-    #         Y = Y.float()
-    #         error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
-    #         return neg_log_likelihood, error, torch.argmax(Y_prob).item(), Y.item()
-    #
-    # def calculate_classification_error(self, X, Y):
-    #     Y = Y.float()
-    #     Y_prob, _= self.forward(X)
-    #     # Y_hat = torch.argmax(Y_prob, dim=1).float().max()
-    #     Y_hat = torch.argmax(Y_prob, dim=1).float()
-    #     # _, counts = torch.unique(Y_hat, sorted=True, return_counts=True)
-    #     # Y_hat = torch.argmax(counts)
-    #     # error = 1. - Y_hat.eq(Y).cpu().float().mean().item()
-    #
-    #     return Y_hat.cpu(), Y.cpu()
+class Agg_Attention(nn.Module):
+    def __init__(self, L=512):
+        super(Agg_Attention, self).__init__()
+        self.L = L
+        self.D = 64
+        self.K = 1
+
+        self.attention = nn.Sequential(
+            nn.Linear(self.L, self.D),
+            nn.Tanh(),
+            nn.Linear(self.D, self.K)
+        )
+
+    def forward(self, H, batch=None):
+        A = self.attention(H)  # NxK
+        A = torch.transpose(A, 1, 0)  # KxN
+        return A
 
 class Agg_GAttention(nn.Module):
-    def __init__(self):
+    def __init__(self, L=512):
         super(Agg_GAttention, self).__init__()
-        self.L = 128
+        self.L = L
         self.D = 64
         self.K = 1
 
@@ -152,14 +137,13 @@ class Agg_GAttention(nn.Module):
         return A
 
 class Agg_SAttention(nn.Module):
-    def __init__(self, dropout=0.1):
+    def __init__(self, L=512, dropout=0.1):
         super(Agg_SAttention, self).__init__()
-        self.L = 128
+        self.L = L
         self.D = 64
         self.K = 1
 
         self.attention_weights = nn.Linear(self.D, self.K)
-
 
         # self attention
         self.SA1 = nn.Linear(self.L, self.D)
@@ -196,34 +180,6 @@ class Agg_SAttention(nn.Module):
         A = torch.transpose(A, 1, 0)  # KxN
         return A
 
-class Agg_Attention(nn.Module):
-    def __init__(self):
-        super(Agg_Attention, self).__init__()
-        self.L = 128
-        self.D = 64
-        self.K = 1
-
-        self.attention = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Tanh(),
-            nn.Linear(self.D, self.K)
-        )
-        self.attention_V = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Tanh()
-        )
-
-        self.attention_U = nn.Sequential(
-            nn.Linear(self.L, self.D),
-            nn.Sigmoid()
-        )
-
-        self.attention_weights = nn.Linear(self.D, self.K)
-
-    def forward(self, H, batch=None):
-        A = self.attention(H)  # NxK
-        A = torch.transpose(A, 1, 0)  # KxN
-        return A
 # residual = gcn +attention
 class GraphMILNet(nn.Module):
     """
@@ -235,7 +191,7 @@ class GraphMILNet(nn.Module):
     def __init__(self, n_topk):
         super(GraphMILNet, self).__init__()
         self.n_topk = n_topk
-        self.L = 128
+        self.L = 512
         self.gcn = GCNConv(self.L, self.L)
 
     def forward(self, features, batch):

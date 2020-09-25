@@ -1,0 +1,17 @@
+{
+    "exp_base": "./experiments_data",
+    "debug": false,
+    "exp_name": "imagenet_byol",
+    "exp_id": "res18_BYOL",
+    "gpu_device": [0],
+    "seed": 1337,
+    "data_loader_workers": 32,
+    "projection_size": 128,
+    "projection_hidden_size": 4096,
+    "model_params": {
+        "out_dim": 128
+    },
+    "loss_params": {
+        "loss": "PuzzleModule"
+    }
+}

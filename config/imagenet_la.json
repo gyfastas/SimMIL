@@ -2,7 +2,7 @@
     "exp_base": "./experiments_data",
     "debug":false,
     "exp_name": "imagenet_la",
-    "exp_id": "res18_LA",
+    "exp_id": "shakeshake_LA",
     "agent": "ImageNetAgent",
     "cuda": true,
     "gpu_device": [0],
@@ -13,10 +13,10 @@
         "out_dim": 128
     },
     "loss_params": {
-        "k": 4096,
+        "k": 1024,
         "t": 0.07,
         "m": 0.5,
-        "kmeans_k": 200,
+        "kmeans_k": 10,
         "n_kmeans": 3,
         "kmeans_freq": null,
         "loss": "LocalAggregationLossModule"
