@@ -322,19 +322,22 @@ class MT_ResAMIL_BagIns(nn.Module):
     def __init__(self, num_classes, attention, L):
         super(MT_ResAMIL_BagIns, self).__init__()
         # Student Net
-        self.STU = cifar_shakeshake26(attention=attention, L=L)
-        self.STU.fc1 = nn.Linear(384, num_classes)
-        self.STU.fc2 = nn.Linear(384, num_classes)
+        self.STU = Wide_ResNet(28, 2, 0.3, num_classes, attention, L)
+        self.STU.fc1 = nn.Linear(L, num_classes) #embedding cls
+        self.STU.fc2 = nn.Linear(L, num_classes) #instance cls
 
 
-    def forward(self, im_q, batch):
+    def forward(self, im_q, batch, pool_model, paradigm):
         # bsz = im_q.size(0)
         ins_feat_q, attention_q = self.STU(im_q, batch)
-        bag_feat_q = attention_weighted_feature(ins_feat_q, attention_q, batch)
-        bag_cls = self.STU.fc1(bag_feat_q)
-        ins_cls = self.STU.fc2(ins_feat_q)
-        ins_cls = attention_weighted_feature(ins_cls, attention_q, batch)
-        return bag_cls, ins_cls
+        if paradigm == 'embedding':
+            bag_feat_q = attention_weighted_feature(ins_feat_q, attention_q, batch, pool_model)
+            embedding_cls = self.STU.fc1(bag_feat_q)
+            return embedding_cls
+        elif paradigm == 'instance':
+            ins_cls = self.STU.fc2(ins_feat_q)
+            instance_cls = attention_weighted_feature(ins_cls, attention_q, batch, pool_model)
+            return instance_cls
 
 class MT_ResAMIL_ODC(nn.Module):
     '''
@@ -400,10 +403,6 @@ class ClusterAttentionPooling(nn.Module):
         ins_feat = self.attpooling(ins_feat) #[M, F] => [1, F]
 
         return ins_feat
-
-        
-
-
 
     def extract(self, im_q, batch):
         with torch.no_grad():

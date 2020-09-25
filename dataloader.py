@@ -280,13 +280,13 @@ class MIL_CRC(ImageFolder):
         self.folder_inslabel_frombag = [labels_list_frombag[k] for k in chosen_idx]
 
     def collate_fn(self, batch):
-        bag_idx_lists = [x[0].long() for x in batch]
+        # bag_idx_lists = [x[0].long() for x in batch]
         # ins_idx_lists = [x[0][1].long() for x in batch]
-        bag_lists1 = [x[1][0] for x in batch]
-        bag_lists2 = [x[1][1] for x in batch]
-        bag_label = [x[2][0] for x in batch]
-        ins_label_real = [x[2][1] for x in batch]
-        ins_label_frombag = [x[2][2] for x in batch]
+        bag_lists = [x[0] for x in batch]
+        # bag_lists2 = [x[0][1] for x in batch]
+        bag_label = [x[1][0] for x in batch]
+        ins_label_real = [x[1][1] for x in batch]
+        ins_label_frombag = [x[1][2] for x in batch]
         batches = []
         for i in range(len(batch)):
             batches.extend([i] * len(ins_label_real[i]))
@@ -294,8 +294,7 @@ class MIL_CRC(ImageFolder):
         bag_label = torch.torch.tensor(bag_label).long()
         ins_label_real = torch.tensor(np.concatenate(np.array(ins_label_real))).long()
         ins_label_frombag = torch.tensor(np.concatenate(np.array(ins_label_frombag))).long()
-        return torch.cat(bag_idx_lists), (torch.cat(bag_lists1), torch.cat(bag_lists2)),\
-             (bag_label, ins_label_real, ins_label_frombag), batches
+        return torch.cat(bag_lists), (bag_label, ins_label_real, ins_label_frombag), batches
 
     def __getitem__(self, index):
 
@@ -304,9 +303,9 @@ class MIL_CRC(ImageFolder):
 
         # img = np.array(Image.open(path))
 
-        bag_list1 = torch.tensor([])
-        bag_list2 = torch.tensor([])
-        ins_idx_list = torch.tensor([]).long()
+        bag_list = torch.tensor([])
+        # bag_list2 = torch.tensor([])
+        # ins_idx_list = torch.tensor([]).long()
         # cnt = 0
 
         for i in path:
@@ -314,10 +313,10 @@ class MIL_CRC(ImageFolder):
             ins_sample = Image.open(i)
             if self.transform is not None:
                 ins_sample = self.transform(ins_sample)
-            bag_list1 = torch.cat((bag_list1, ins_sample[0].unsqueeze(0)))
-            bag_list2 = torch.cat((bag_list2, ins_sample[1].unsqueeze(0)))
+            bag_list = torch.cat((bag_list, ins_sample.unsqueeze(0)))
+            # bag_list2 = torch.cat((bag_list2, ins_sample[1].unsqueeze(0)))
             # ins_idx_list = torch.cat((ins_idx_list, torch.tensor([cnt])))
-        return torch.tensor([index]), (bag_list1, bag_list2), target
+        return bag_list, target
 
     def __len__(self):
         return len(self.folder_img)

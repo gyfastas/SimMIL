@@ -1,7 +1,8 @@
 from __future__ import print_function
 
 import os
-import tqdm
+os.environ["CUDA_VISIBLE_DEVICES"] = '6'
+from tqdm import tqdm
 import argparse
 import torch
 import torch.backends.cudnn as cudnn
@@ -9,8 +10,8 @@ import torch.utils.data as data_utils
 import torch.optim as optim
 from torch.autograd import Variable
 from dataloader import MIL_CRC
-from model import MT_ResAMIL_BagIns, MT_ResAMIL_ODC
-from utils.utils import cal_metrics, find_class_by_name, set_param_groups, GaussianBlur, TwoCropsTransform, adjust_learning_rate
+from model import MT_ResAMIL_BagIns
+from utils.utils import find_class_by_name, set_param_groups, GaussianBlur, TwoCropsTransform, adjust_learning_rate
 from Builder import FeaAgg, clustering
 import torch.nn as nn
 import torch.nn.functional as F
@@ -29,7 +30,7 @@ parser.add_argument('--lr', type=float, default=3e-4, metavar='LR',
                     help='learning rate (default: 0.0005)')
 parser.add_argument('--reg', type=float, default=0, metavar='R',
                     help='weight decay')
-parser.add_argument('--bs', type=int, default=4,
+parser.add_argument('--bs', type=int, default=2,
                     help='Batch size')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
@@ -48,18 +49,21 @@ parser.add_argument('--attention', type=str, default='Agg_GAttention',
                     # help='momentum used in MOCO')                    
 parser.add_argument('--ema', type=float, default=0.99, metavar='EMA',
                     help='exponential moving average')
-#memory bank
-parser.add_argument('--mb_dim', default=256, type=int,
-                    help='feature dimension (default: 128)')
-parser.add_argument('--mb_t', default=0.07, type=float,
-                    help='softmax temperature (default: 0.07)')
-parser.add_argument('--mb_ema', default=0.5, type=float,
-                    help='Momentum for memory bank (default: 0.5)')
-parser.add_argument('--mb_K', default=4, type=int,
-                    help='K ins classes (default: 4)')
+# #memory bank
+# parser.add_argument('--mb_dim', default=256, type=int,
+#                     help='feature dimension (default: 128)')
+# parser.add_argument('--mb_t', default=0.07, type=float,
+#                     help='softmax temperature (default: 0.07)')
+# parser.add_argument('--mb_ema', default=0.5, type=float,
+#                     help='Momentum for memory bank (default: 0.5)')
+# parser.add_argument('--mb_K', default=4, type=int,
+#                     help='K ins classes (default: 4)')
+# train paradigm
+parser.add_argument('--pool_model', type=str, default='mean')
+parser.add_argument('--paradigm', type=str, default='embedding')
 # loss weight
-parser.add_argument('--weight_self', type=float, default=0)
-parser.add_argument('--weight_mse', type=float, default=0)
+parser.add_argument('--weight_self', type=float, default=1)
+parser.add_argument('--weight_mse', type=float, default=1)
 # parser.add_argument('--weight_bag', type=float, default=0)
 # Data and logging
 parser.add_argument('--ratio', type=float, default=0.8,
@@ -92,7 +96,7 @@ for arg, content in args.__dict__.items():
 channel_stats = dict(mean=[0.4914, 0.4822, 0.4465],
                      std=[0.2470,  0.2435,  0.2616])
 
-loader_kwargs = {'num_workers': 16, 'pin_memory': True} if args.cuda else {}
+loader_kwargs = {'num_workers': 8, 'pin_memory': True} if args.cuda else {}
 
 aug_train = [
             #aug Moco v2's aug
@@ -111,7 +115,7 @@ aug_test = [
             transforms.ToTensor(),
             transforms.Normalize(**channel_stats)]
 
-train_dataset = MIL_CRC(bag_path, TwoCropsTransform(transforms.Compose(aug_train)),
+train_dataset = MIL_CRC(bag_path, transforms.Compose(aug_train),
                                  floder=args.folder, ratio=args.ratio, train=True)
 
 test_dataset  = MIL_CRC(bag_path, transforms.Compose(aug_test),
@@ -171,7 +175,7 @@ attention = find_class_by_name(args.attention, [FeaAgg])
                 #  m=args.ema, T=args.mb_t, dim=args.mb_dim, K=len(train_dataset), bag_label=bag_label, 
                 #  BYOL_flag=BYOL_flag, BYOL_size=config.projection_size, BYOL_hidden_size=config.projection_hidden_size)
 tr_length = len(np.concatenate(np.array(train_dataset.labels_list_frombag)))
-model = MT_ResAMIL_BagIns(num_classes=2, attention=attention, L=384) #basline model
+model = MT_ResAMIL_BagIns(num_classes=2, attention=attention, L=128) #basline model
 if args.cuda:
     model.cuda()
 print(model)
@@ -222,6 +226,18 @@ criterion_mse = nn.MSELoss()
 #     ce_reweight=model.set_reweight(new_labels, 0.5)
 #     return ce_reweight.cuda()
 
+def cal_metrics(preds, gt):
+    preds = np.array(preds)
+    gt = np.array(gt)
+    target_names = ['Negative', 'Positive']
+    cls_rep = classification_report(gt, preds, target_names=target_names, output_dict=False)
+    con_ma = confusion_matrix(gt, preds)
+    fpr, tpr, _ = roc_curve(gt, preds, pos_label=1)
+    AUC = auc(fpr, tpr)
+    print(cls_rep)
+    print(con_ma)
+    print('AUC:{}'.format(AUC))
+
 def train(epoch):
     model.train()
     train_loss = 0.
@@ -237,31 +253,22 @@ def train(epoch):
     ins_preds_list = []
     ins_gt_list = []
 
-    # ce_reweight = init_weight 
-    # ce_w = 1.
-    # ce_m = 1.
-
-    # adjusted_weight = adjust_weight(args.weight_mse, epoch, args)
-    for batch_idx, (bag_idx, data, label, batch) in enumerate(train_loader):
+    for _, (data, label, batch) in enumerate(tqdm(train_loader)):
         bag_label, ins_real_label, ins_fb_label = label
-        img_q, img_k = data
+        img = data
         if args.cuda:
-            # img_k, img_q, bag_label = img_k.cuda(non_blocking=True), img_q.cuda(non_blocking=True), bag_label.cuda(non_blocking=True)
-            # bag_idx, batch = bag_idx.cuda(non_blocking=True), batch.cuda(non_blocking=True)
-            img_k, img_q, bag_label, ins_real_label, ins_fb_label, bag_idx, batch = \
-                img_k.cuda(), img_q.cuda(), bag_label.cuda(), ins_real_label.cuda(), ins_fb_label.cuda(), bag_idx.cuda(), batch.cuda()
+            img, bag_label, ins_real_label, ins_fb_label, batch = \
+                img.cuda(), bag_label.cuda(), ins_real_label.cuda(), ins_fb_label.cuda(), batch.cuda()
         # reset gradients
         optimizer.zero_grad()
         # calculate loss and metrics
-        bag_preds_q, bag_preds_k = model(data_aug1, batch)
-        ce_loss_bag = criterion_ce(bag_preds_q, bag_label)
-        ce_loss_ins = criterion_ce(bag_preds_k, bag_label)
-        loss = args.ce1_weight*ce_loss_bag + args.mse_weight*ce_loss_ins
+        preds_img = model(img, batch, args.pool_model, args.paradigm)
+        ce_loss_bag = criterion_ce(preds_img, bag_label)
+        # ce_loss_ins = criterion_ce(ins_preds_q, ins_fb_label)
+        # loss = args.weight_self*ce_loss_bag + args.weight_mse*ce_loss_ins
+        loss = args.weight_self*ce_loss_bag
         CE_loss += ce_loss_bag.item()
-        MSE_loss += ce_loss_ins.item()
-
-
-        
+        # MSE_loss += ce_loss_ins.item()
 
         # if args.weight_mse != 0:
             # mse_loss = criterion_mse(Y_prob_q_sf, Y_prob_k_sf)/data[0].shape[0]
@@ -280,8 +287,8 @@ def train(epoch):
             # total_loss = total_loss + args.weight_self * ins_loss
 
         train_loss += loss.item()
-        preds_list_1.extend([torch.argmax(bag_preds_q, dim=1)[i].item() for i in range(bag_preds_q.shape[0])])
-        preds_list_2.extend([torch.argmax(bag_preds_k, dim=1)[i].item() for i in range(bag_preds_k.shape[0])])
+        preds_list_1.extend([torch.argmax(preds_img, dim=1)[i].item() for i in range(preds_img.shape[0])])
+        # preds_list_2.extend([torch.argmax(bag_preds_k, dim=1)[i].item() for i in range(bag_preds_k.shape[0])])
         gt_list.extend([bag_label[i].item() for i in range(bag_label.shape[0])])
         # backward pass
         loss.backward()
@@ -290,13 +297,14 @@ def train(epoch):
 
     # calculate loss and error for epoch
     CE_loss /= len(train_loader)
-    INS_loss /= len(train_loader)
-    MSE_loss /= len(train_loader)
+    # INS_loss /= len(train_loader)
+    # MSE_loss /= len(train_loader)
     train_loss /= len(train_loader)
     train_error /= len(train_loader)
+    print('====================Train')
     cal_metrics(preds_list_1, gt_list)
-    cal_metrics(preds_list_2, gt_list)
-    print('Epoch: {}, Loss: {:.4f}, {:.4f}, {:.4f}'.format(epoch, train_loss, CE_loss, MSE_loss))
+    # cal_metrics(preds_list_2, gt_list)
+    print('Epoch: {}, Loss: {:.4f}'.format(epoch, train_loss))
 
 def test():
     model.eval()
@@ -305,26 +313,24 @@ def test():
     preds_list = []
     gt_list = []
     with torch.no_grad():
-        for batch_idx, (_, _, data, label, batch) in enumerate(tqdm(test_loader)):
-            bag_label = label
-            img_k = data[0]
-            img_q = data[1]
+        for batch_idx, (data, label, batch) in enumerate(tqdm(test_loader)):
+            bag_label = label[0]
+            img = data
+            # img_q = data[1]
             if args.cuda:
-                img_k, img_q, bag_label, batch = img_k.cuda(), img_q.cuda(), bag_label.cuda(), batch.cuda()
-            preds = model(img_k, None, batch=batch,  bag_idx=None, label=None)
-            preds_list.extend([torch.argmax(preds, dim=1)[i].item() for i in range(preds.shape[0])])
+                img, bag_label, batch = img.cuda(), bag_label.cuda(), batch.cuda()
+            preds_bag = model(img, batch, args.pool_model, args.paradigm)
+            preds_list.extend([torch.argmax(preds_bag, dim=1)[i].item() for i in range(preds_bag.shape[0])])
             gt_list.extend([bag_label[i].item() for i in range(bag_label.shape[0])])
 
         test_error /= len(test_loader)
         test_loss /= len(test_loader)
-        logger.log_string('Test====================')
-        logger.log_string(
-            '\nEpoch: {}, Test Set, Loss: {:.4f}, Test error: {:.4f}'.format(epoch, test_loss, test_error))
-        cal_metrics(preds_list, gt_list, args, logger, epoch, 'test')
+        print('Test====================')
+        cal_metrics(preds_list, gt_list)
 
 if __name__ == "__main__":
     print('Start Training')
-    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+    # torch.cuda.empty_cache()
     # w = init_memory()
     for epoch in range(1, args.epochs + 1):
         adjust_learning_rate(optimizer, epoch, args)
