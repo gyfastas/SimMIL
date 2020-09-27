@@ -461,12 +461,10 @@ class CifarBags(data_utils.Dataset):
         self.transform = transform
         if self.train:
             self.train_bags_list, \
-            self.train_labels_list, self.train_labels_list_real, \
-            self.train_labels_frombag, self.train_bag_index_mb = self._form_bags()
+            self.train_labels_list, self.train_labels_list_real, self.train_labels_frombag= self._form_bags()
         else:
             self.test_bags_list, \
-            self.test_labels_list, self.test_labels_list_real,\
-            self.test_labels_frombag, self.test_bag_index_mb = self._form_bags()
+            self.test_labels_list, self.test_labels_list_real, self.test_labels_frombag = self._form_bags()
 
     @staticmethod
     def _test(target_numbers, labels_in_bag):
@@ -481,121 +479,62 @@ class CifarBags(data_utils.Dataset):
         return torch.cat(ins_labels)
 
     def _form_bags(self):
+        bags_list = []
+        labels_list = []
+        labels_list_real = []
+        labels_list_frombag = []
+        valid_bags_counter = 0
+        label_of_last_bag = 0
+        cnt = 0
         if self.train:
-            bags_list = []
-            labels_list = []
-            labels_list_real = []
-            labels_list_frombag = []
-            index_for_bag = []
-            valid_bags_counter = 0
-            label_of_last_bag = 0
-            cnt = 0
-            dataset = datasets.CIFAR10('../datasets',
-                                  train=True,
-                                  download=True,)
-            numbers = dataset.data
-            labels = torch.tensor(dataset.targets)
-            while valid_bags_counter < self.num_bag:
-                bag_length = np.int(self.r.normal(self.mean_bag_length, self.var_bag_length, 1))
-                if bag_length <= 1:
-                    bag_length = 2
-                indices = torch.LongTensor(self.r.randint(0, self.num_in_train, bag_length))
-                labels_in_bag = labels[indices]
-                ins_labels = self._test(self.target_number, labels_in_bag)
-                if (ins_labels.sum().item()>0) and (label_of_last_bag == 0):
-                    # real label, the same label as bag, index for mb
-                    labels_list_real.append(labels_in_bag)
-                    labels_list_frombag.append(torch.ones_like((labels_in_bag)))
-                    index_for_bag.append(torch.arange(cnt, cnt+len((labels_in_bag))))
-                    cnt += len(labels_in_bag)
-
-                    labels_in_bag = ins_labels
-                    labels_list.append(labels_in_bag)
-                    bags_list.append(numbers[indices])
-                    label_of_last_bag = 1
-                    valid_bags_counter += 1
-                elif label_of_last_bag == 1:
-                    index_list = []
-                    bag_length_counter = 0
-                    while bag_length_counter < bag_length:
-                        index = torch.LongTensor(self.r.randint(0, self.num_in_train, 1))
-                        label_temp = labels[index]
-                        # if label_temp.numpy()[0] != self.target_number:
-                        if label_temp not in self.target_number:
-                            index_list.append(index)
-                            bag_length_counter += 1
-
-                    index_list = np.array(index_list)
-                    labels_in_bag = labels[index_list]
-                    labels_list_real.append(labels_in_bag)
-                    labels_list_frombag.append(torch.zeros_like(labels_in_bag))
-                    index_for_bag.append(torch.arange(cnt, cnt + len((labels_in_bag))))
-                    cnt += len(labels_in_bag)
-                    labels_in_bag = self._test(self.target_number, labels_in_bag)
-                    labels_list.append(labels_in_bag)
-                    bags_list.append(numbers[index_list])
-                    label_of_last_bag = 0
-                    valid_bags_counter += 1
-                else:
-                    pass
-
+            dataset = datasets.CIFAR10('../datasets', train=True, download=True)
         else:
-            bags_list = []
-            labels_list = []
-            labels_list_real = []
-            labels_list_frombag = []
-            index_for_bag = []
-            valid_bags_counter = 0
-            label_of_last_bag = 0
-            cnt = 0
-            dataset = datasets.CIFAR10('../datasets',
-                                   train=False,
-                                   download=True,)
-            numbers = dataset.data
-            labels = torch.tensor(dataset.targets)
-            while valid_bags_counter < self.num_bag:
-                bag_length = np.int(self.r.normal(self.mean_bag_length, self.var_bag_length, 1))
-                if bag_length <= 1:
-                    bag_length = 2
+            dataset = datasets.CIFAR10('../datasets', train=False, download=True)
+        numbers = dataset.data
+        labels = torch.tensor(dataset.targets)
+        while valid_bags_counter < self.num_bag:
+            bag_length = np.int(self.r.normal(self.mean_bag_length, self.var_bag_length, 1))
+            if bag_length < 1:
+                bag_length = 1
+            if self.train:
+                indices = torch.LongTensor(self.r.randint(0, self.num_in_train, bag_length))
+            else:
                 indices = torch.LongTensor(self.r.randint(0, self.num_in_test, bag_length))
-                labels_in_bag = labels[indices]
-                ins_labels = self._test(self.target_number, labels_in_bag)
-                if (ins_labels.sum().item()>0) and (label_of_last_bag == 0):
-                    labels_list_real.append(labels_in_bag)
-                    labels_list_frombag.append(torch.ones_like(labels_in_bag))
-                    index_for_bag.append(torch.arange(cnt, cnt + len((labels_in_bag))))
-                    cnt += len(labels_in_bag)
-                    labels_in_bag = ins_labels
-                    labels_list.append(labels_in_bag)
-                    bags_list.append(numbers[indices])
-                    label_of_last_bag = 1
-                    valid_bags_counter += 1
-                elif label_of_last_bag == 1:
-                    index_list = []
-                    bag_length_counter = 0
-                    while bag_length_counter < bag_length:
+            labels_in_bag = labels[indices]
+            ins_labels = self._test(self.target_number, labels_in_bag)
+            if (ins_labels.sum().item()>0) and (label_of_last_bag == 0):
+                labels_list_real.append(labels_in_bag)
+                labels_list_frombag.append(torch.ones_like((labels_in_bag)))
+                cnt += len(labels_in_bag)
+                labels_in_bag = ins_labels
+                labels_list.append(labels_in_bag)
+                bags_list.append(numbers[indices])
+                label_of_last_bag = 1
+                valid_bags_counter += 1
+            elif label_of_last_bag == 1:
+                index_list = []
+                bag_length_counter = 0
+                while bag_length_counter < bag_length:
+                    if self.train:
+                        index = torch.LongTensor(self.r.randint(0, self.num_in_train, 1))
+                    else:
                         index = torch.LongTensor(self.r.randint(0, self.num_in_test, 1))
-                        label_temp = labels[index]
-                        # if label_temp.numpy()[0] != self.target_number:
-                        if label_temp not in self.target_number:
-                            index_list.append(index)
-                            bag_length_counter += 1
-                    index_list = np.array(index_list)
-                    labels_in_bag = labels[index_list]
-                    labels_list_real.append(labels_in_bag)
-                    labels_list_frombag.append(torch.zeros_like(labels_in_bag))
-                    index_for_bag.append(torch.arange(cnt, cnt + len((labels_in_bag))))
-                    cnt += len(labels_in_bag)
+                    label_temp = labels[index]
+                    if label_temp not in self.target_number:
+                        index_list.append(index)
+                        bag_length_counter += 1
+                index_list = np.array(index_list)
+                labels_in_bag = labels[index_list]
+                labels_list_real.append(labels_in_bag)
+                labels_list_frombag.append(torch.zeros_like(labels_in_bag))
+                cnt += len(labels_in_bag)
+                labels_in_bag = self._test(self.target_number, labels_in_bag)
+                labels_list.append(labels_in_bag)
+                bags_list.append(numbers[index_list])
+                label_of_last_bag = 0
+                valid_bags_counter += 1
 
-                    labels_in_bag = self._test(self.target_number, labels_in_bag)
-                    labels_list.append(labels_in_bag)
-                    bags_list.append(numbers[index_list])
-                    label_of_last_bag = 0
-                    valid_bags_counter += 1
-                else:
-                    pass
-
-        return bags_list, labels_list, labels_list_real, labels_list_frombag, index_for_bag
+        return bags_list, labels_list, labels_list_real, labels_list_frombag
 
     def __len__(self):
         if self.train:
@@ -605,60 +544,34 @@ class CifarBags(data_utils.Dataset):
 
     def __getitem__(self, index):
         bag_list = torch.tensor([])
-        bag_list_aug0 = torch.tensor([])
-        bag_list_aug1 = torch.tensor([])
-        bag_list_aug2 = torch.tensor([])
+        # bag_list_aug0 = torch.tensor([])
+        # bag_list_aug1 = torch.tensor([])
+        # bag_list_aug2 = torch.tensor([])
         if self.train:
             bag = self.train_bags_list[index]
             label = [max(self.train_labels_list[index]), self.train_labels_list[index], self.train_labels_frombag[index]]
-            index_list = self.train_bag_index_mb[index]
         else:
             bag = self.test_bags_list[index]
             label = [max(self.test_labels_list[index]), self.test_labels_list[index], self.test_labels_frombag[index]]
-            index_list = self.test_bag_index_mb[index]
         for i in range(len(bag)):
             img = Image.fromarray(bag[i])
             if self.transform:
                 img = self.transform(img)
-                if self.train:
-                    bag_list_aug0 = torch.cat((bag_list_aug0, img[0].unsqueeze(0)))
-                    bag_list_aug1 = torch.cat((bag_list_aug1, img[1].unsqueeze(0)))
-                    bag_list_aug2 = torch.cat((bag_list_aug2, img[2].unsqueeze(0)))
-                else:
-                    bag_list = torch.cat((bag_list, img.unsqueeze(0)))
-        if self.train:
-            bag_list = (bag_list_aug0, bag_list_aug1, bag_list_aug2)
-        return bag_list, label, index_list
-
-    # rotated_imgs = [
-    #     self.transform(img0),
-    #     self.transform(rotate_img(img0, 90)),
-    #     self.transform(rotate_img(img0, 180)),
-    #     self.transform(rotate_img(img0, 270))
-    # ]
-    # rotation_labels = torch.LongTensor([0, 1, 2, 3])
-    # return torch.stack(rotated_imgs, dim=0), rotation_labels
+            bag_list = torch.cat((bag_list, img.unsqueeze(0)))
+        return bag_list, label
 
     def collate_fn(self, batch):
+        bag_lists = [x[0] for x in batch]
         bag_label_lists = [x[1][0].long() for x in batch]
         ins_label_lists = [x[1][1].long() for x in batch]
         ins_fb_label_lists = [x[1][2].long() for x in batch]
-        index_list = [x[2] for x in batch]
+        # index_list = [x[2] for x in batch]
         batches = []
         for i in range(len(batch)):
             batches.extend([i] * len(ins_label_lists[i]))
-
         batches = torch.tensor(batches).long()
-        if self.train:
-            bag_lists_aug0 = [x[0][0] for x in batch]
-            bag_lists_aug1 = [x[0][1] for x in batch]
-            bag_lists_aug2 = [x[0][2] for x in batch]
-            return (torch.cat(bag_lists_aug0), torch.cat(bag_lists_aug1), torch.cat(bag_lists_aug2)),\
-                   torch.stack(bag_label_lists), torch.cat(ins_label_lists), torch.cat(ins_fb_label_lists), \
-                   batches, torch.cat(index_list)
-        else:
-            bag_lists = [x[0] for x in batch]
-            return torch.cat(bag_lists), torch.stack(bag_label_lists), torch.cat(ins_label_lists), batches, torch.cat(index_list)
+
+        return torch.cat(bag_lists), (torch.stack(bag_label_lists), torch.cat(ins_label_lists), torch.cat(ins_fb_label_lists)), batches
 
 if __name__ == "__main__":
     train_path = '/home/tclin/Documents/ICIAR/WSI/train'

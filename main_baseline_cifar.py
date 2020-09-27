@@ -11,7 +11,7 @@ import torch.backends.cudnn as cudnn
 import torch.utils.data as data_utils
 import torch.optim as optim
 from torch.autograd import Variable
-from dataloader import MIL_CRC
+from dataloader import CifarBags
 from model import MT_ResAMIL_BagIns
 from utils.utils import find_class_by_name, set_param_groups, GaussianBlur, TwoCropsTransform, adjust_learning_rate
 from Builder import FeaAgg, clustering
@@ -32,7 +32,7 @@ parser.add_argument('--lr', type=float, default=3e-4, metavar='LR',
                     help='learning rate (default: 0.0005)')
 parser.add_argument('--reg', type=float, default=0, metavar='R',
                     help='weight decay')
-parser.add_argument('--bs', type=int, default=2,
+parser.add_argument('--bs', type=int, default=8,
                     help='Batch size')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
@@ -40,17 +40,25 @@ parser.add_argument('--cuda', action='store_true', default=True,
                     help='disables CUDA training')
 parser.add_argument('--cos', action='store_true', default=True,
                     help='use cosine lr schedule')
-# parser.add_argument('--schedule', default=[120, 160], nargs='*', type=int,
-                    # help='learning rate schedule (when to drop lr by 10x)')
-#############################################################
-# parser.add_argument('--pretrained', action='store_true', default=False,
-                    # help='imagenet_pretrained and fix_bn to aviod shortcut')
 parser.add_argument('--attention', type=str, default='Agg_GAttention',
-                    help='Agg_GAttention/Agg_SAttention/Agg_Attention')
-# parser.add_argument('--momentum', type=float, default=0.999,
-                    # help='momentum used in MOCO')                    
+                    help='Agg_GAttention/Agg_SAttention/Agg_Attention')                 
 parser.add_argument('--ema', type=float, default=0.99, metavar='EMA',
                     help='exponential moving average')
+# parser.add_argument('--schedule', default=[120, 160], nargs='*', type=int,
+                    # help='learning rate schedule (when to drop lr by 10x)')
+# parser.add_argument('--pretrained', action='store_true', default=False,
+                    # help='imagenet_pretrained and fix_bn to aviod shortcut')
+# cifar bag
+parser.add_argument('--target_number', type=int, nargs='+', default=[9], metavar='T',
+                    help='single_train_target')
+parser.add_argument('--mean_bag_length', type=int, default=10, metavar='ML',
+                    help='average bag length')
+parser.add_argument('--var_bag_length', type=int, default=2, metavar='VL',
+                    help='variance of bag length')
+parser.add_argument('--num_bags_train', type=int, default=500, metavar='NTrain',
+                    help='number of bags in training set')
+parser.add_argument('--num_bags_test', type=int, default=1000, metavar='NTest',
+                    help='number of bags in test set')
 # #memory bank
 # parser.add_argument('--mb_dim', default=256, type=int,
 #                     help='feature dimension (default: 128)')
@@ -68,13 +76,13 @@ parser.add_argument('--weight_self', type=float, default=1)
 parser.add_argument('--weight_mse', type=float, default=1)
 # parser.add_argument('--weight_bag', type=float, default=0)
 # Data and logging
-parser.add_argument('--ratio', type=float, default=0.8,
-                    help='the ratio of train dataset')
-parser.add_argument('--folder', type=int, default=0,
-                    help='CV folder')
-parser.add_argument('--data_dir', type=str, default='/remote-home/source/DATA',
-                    help='local: /media/walkingwind/Transcend'
-                         'remote: /remote-home/source/DATA')
+# parser.add_argument('--ratio', type=float, default=0.8,
+#                     help='the ratio of train dataset')
+# parser.add_argument('--folder', type=int, default=0,
+#                     help='CV folder')
+# parser.add_argument('--data_dir', type=str, default='/remote-home/source/DATA',
+#                     help='local: /media/walkingwind/Transcend'
+#                          'remote: /remote-home/source/DATA')
 parser.add_argument('--checkpoint_dir', default='./experiments_data', type=str,
                     help='path to checkpoint')
 parser.add_argument('--log_dir', default='./experiments', type=str)                    
@@ -94,7 +102,7 @@ if args.cuda:
 log_path = os.path.join(args.log_dir, str(datetime.datetime.now()))
 logger = Logger(logdir=log_path)
 print('Load Train and Test Set')
-bag_path = os.path.join(args.data_dir, 'CRCHistoPhenotypes')
+# bag_path = os.path.join(args.data_dir, 'CRCHistoPhenotypes')
 
 for arg, content in args.__dict__.items():
     print("{}:{}".format(arg, content))
@@ -121,11 +129,20 @@ aug_test = [
             transforms.ToTensor(),
             transforms.Normalize(**channel_stats)]
 
-train_dataset = MIL_CRC(bag_path, transforms.Compose(aug_train),
-                                 floder=args.folder, ratio=args.ratio, train=True)
-
-test_dataset  = MIL_CRC(bag_path, transforms.Compose(aug_test),
-                                floder=args.folder, ratio=args.ratio, train=False)
+train_dataset = CifarBags(target_number=args.target_number,
+                          mean_bag_length=args.mean_bag_length,
+                          var_bag_length=args.var_bag_length,
+                          num_bag=args.num_bags_train,
+                          seed=args.seed,
+                          train=True,
+                          transform=transforms.Compose(aug_train))
+test_dataset = CifarBags(target_number=args.target_number,
+                         mean_bag_length=args.mean_bag_length,
+                         var_bag_length=args.var_bag_length,
+                         num_bag=args.num_bags_test,
+                         seed=args.seed,
+                         train=False,
+                         transform=transforms.Compose(aug_test))
 
 train_loader = data_utils.DataLoader(train_dataset,
                                      batch_size=args.bs,
@@ -180,7 +197,7 @@ attention = find_class_by_name(args.attention, [FeaAgg])
                 #  AggNet, attention, graph, args.n_topk,
                 #  m=args.ema, T=args.mb_t, dim=args.mb_dim, K=len(train_dataset), bag_label=bag_label, 
                 #  BYOL_flag=BYOL_flag, BYOL_size=config.projection_size, BYOL_hidden_size=config.projection_hidden_size)
-tr_length = len(np.concatenate(np.array(train_dataset.labels_list_frombag)))
+# tr_length = len(np.concatenate(np.array(train_dataset.labels_list_frombag)))
 model = MT_ResAMIL_BagIns(num_classes=2, attention=attention, L=128) #basline model
 if args.cuda:
     model.cuda()
